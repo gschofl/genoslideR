@@ -264,8 +264,10 @@ setValidity("annotatedAlignment", function (object) {
 })
 
 
+
+
 setMethod("annotation", "annotatedAlignment",
-          function (x) x@annotation)
+          function (object) object@annotation)
 
 
 setGeneric("alignment", signature="x",
