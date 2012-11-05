@@ -1,0 +1,22 @@
+\name{make_tree}
+\alias{make_tree}
+\title{conctruct NJ or BIONJ tree from one or more multi-FASTA files}
+\usage{
+  make_tree(fna_dir, align = "muscle", dist.model = "K80",
+    tree = "bionj")
+}
+\arguments{
+  \item{fasta_dir}{Directory containing (a) multi-FASTA
+  file(s).}
+
+  \item{align}{One of 'clustal', 'muscle', or 'tcoffee'.}
+
+  \item{dist.model}{See \code{\link[ape]{dist.dna}}}
+
+  \item{tree}{One of 'nj', 'bionj', or 'fastme'.}
+}
+\description{
+  conctruct NJ or BIONJ tree from one or more multi-FASTA
+  files
+}
+

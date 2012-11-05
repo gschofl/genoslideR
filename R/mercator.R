@@ -1,0 +1,569 @@
+#' Run mercator to build a homology map and create orthologous segments
+#' that can be aligned using FSA
+#' 
+#' @param seq_files Path to sequence files.
+#' @param seq_type Type of sequence file ('fasta' or 'genbank').
+#' @param anno_files (Optional) Path to annotations. 
+#' @param anno_type Type of annotation ('glimmer3', 'genbank', 'gff', 
+#' 'ptt', or 'feature_table').
+#' @param mask Softmask sequence before aligning.
+#' 
+#' @export
+mercator <- function (seq_files, seq_type = "fasta", anno_files = NULL,
+                      anno_type = "glimmer3", mask = TRUE) {
+  
+  
+  sequence <- match.arg(seq_type, c("fasta", "genbank"))
+  annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
+  
+  # Make sure necessary external programs are available
+  progs <- c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
+             "anchors2fa", "blat", "blat2hits", "mercator", "sdbAssemble",
+             "phits2constraints", "makeAlignmentInput", "sdbExport",
+             "muscle", "omap2hmap", "makeBreakpointGraph",
+             "makeBreakpointAlignmentInput", "mavidAlignDirs",
+             "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates")
+  
+  progs <- vapply(progs, hasCommand, logical(1))
+  
+  if (any(!progs)) {
+    stop("The following external program(s) must be installed: ", 
+         paste(names(progs[!progs]), collapse=", "))
+  }
+  
+  # point the mercator function to a directory containing sequence and
+  # annotation files and provide the respective file extensions.
+  #
+  # supported sequence formats: fna, gbk
+  # supported annotation formats: gbk, gff, ptt
+  
+  # get annotation and sequence files
+  wd <- normalizePath(dirname(seq_files[1]))
+  seq_files <- normalizePath(seq_files)
+  
+  if (is.null(anno_files)) {
+    if (annotation != "glimmer3")
+      stop("No annotation files provided")
+    else
+      anno_files <- vapply(seq_files, glimmer3, character(1))
+  }
+      
+  anno_files <- normalizePath(anno_files)
+
+  if (length(anno_files) != length(seq_files))
+    stop("Unequal number of sequence and annotation files")
+  
+  if (any(strip_ext(basename(anno_files))%ni%(strip_ext(basename(seq_files)))))
+    stop("Names of annotation and sequence files must match.")
+  
+  # set up the file structure for mercator input and output
+  if (mask) {
+    mask_dir <- file.path(wd, ".masked")
+    if (file.exists(mask_dir)) {
+      warning("An existing '.masked' directory has been overwritten in the working directory")
+      unlink(mask_dir, recursive=TRUE)
+    }
+    dir.create(mask_dir)
+  }
+  
+  merc <- file.path(wd, ".mercator")
+  if (file.exists(merc)) {
+    warning("An existing '.mercator' directory has been overwritten in the working directory")
+    unlink(merc, recursive=TRUE)
+  }
+  
+  merc_gff <- file.path(merc, "gff")
+  merc_fas <- file.path(merc, "fasta")
+  merc_sdb <- file.path(merc, "sdb")
+  merc_hit <- file.path(merc, "hits")
+  for (dir in c(merc_gff, merc_fas, merc_sdb, merc_hit))
+    dir.create(dir, recursive=TRUE)
+  
+  # generate mercator-readable gff files
+  gff_files <- gff_for_mercator(anno_files, annotation)
+  
+  # generate mercator-readable fasta files
+  fna_files <- fna_for_mercator(seq_files, sequence, mask)
+  
+  sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
+  invisible(mapply(function(x, y)
+    system(paste0("fa2sdb ", x, " < ", y)), x = sdb_files, y = fna_files))
+  
+  # compare all of the exon sequences pairwise and generate the proper
+  # input files for Mercator.
+  reciprocal_blat(genomes = strip_ext(basename(fna_files)),
+                  sdb = merc_sdb, gff = merc_gff, out = merc_hit,
+                  sep = "-", mercator = TRUE)
+  
+  # run Mercator on the input files.
+  # This generates a directory 'orthologous_segments' with subdirectories
+  # containing the sequences to be aligned for each orthologous segment set     
+  # identified by the orthology map.
+  segment_dir <- run_mercator(wd)
+  
+  return(invisible(segment_dir))
+}
+
+
+gff_for_mercator <- function (f, type) {
+  type <- match.arg(type, c("gff", "ptt", "gbk", "ftable","glimmer3"))
+  
+  wd <- unique(strip_ext(dirname(f), sep="\\.glimmer.*"))
+  if (!file.exists(file.path(wd, ".mercator")))
+    stop("No '.mercator' directory available in ", wd)
+  
+  out <- switch(type,
+                gff=gff2gff(f),
+                ptt=ptt2gff(f),
+                gbk=gbk2gff(f),
+                ftable=ftb2gff(f),
+                glimmer3=glimmer2gff(f))
+  
+  return(invisible(out))
+}
+
+
+gff2gff <- function (f) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  for (file in f) {
+    
+    l <- readLines(file)
+    nlines <- -1L
+    if (any(l == "##FASTA")) {
+      nlines <- which(l == "##FASTA")[1L] - 1L
+    }
+    rm(l) # free memory
+    
+    # load data frame
+    gff <- scan(file, nlines = nlines, sep = "\t", comment.char = "#", 
+                quote = "", quiet = TRUE, na.strings = '.',
+                what = list(seqid = character(),
+                            source = character(),
+                            type = character(),
+                            start = integer(),
+                            end = integer(),
+                            score = numeric(),
+                            strand = character(),
+                            phase = integer(),
+                            attributes = character()))
+    
+    cds_idx <- which(gff$type == "CDS")
+    len <- length(cds_idx)
+    seqid <- strip_ext(basename(file))
+    gff <- data.frame(stringsAsFactors=FALSE,
+                      seqid = rep(seqid, len), 
+                      source = gff[["source"]][cds_idx],
+                      type = gff[["type"]][cds_idx],
+                      start = gff[["start"]][cds_idx],
+                      end = gff[["end"]][cds_idx],
+                      score = rep(".", len),
+                      strand = gff[["strand"]][cds_idx],
+                      phase = rep("0", len),
+                      attributes = gff[["attributes"]][cds_idx])
+    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
+                col.names=FALSE)
+    outfiles <- c(outfiles, outfile)
+    rm(gff) ## free memory
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+ptt2gff <- function (f) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  for (file in f) {
+    skip <- sum(count.fields(file, sep="\t") < 9)
+    ptt <- scan(file, skip = skip + 1, quote="",
+                quiet=TRUE, sep="\t",
+                what = list(Location = character(),
+                            Strand = character(),
+                            Length = character(),
+                            PID = character(),
+                            Gene = character(),
+                            Synonym = character(),
+                            Code = character(),
+                            COG = character(),
+                            Product = character()))
+    
+    seqid <- strip_ext(basename(file))
+    loc <- strsplit(ptt[["Location"]], "..", fixed=TRUE)
+    len <- length(loc)
+    gff <- data.frame(stringsAsFactors=FALSE,
+                      seqid = rep(seqid, len), 
+                      source = rep("ptt", len),
+                      type = rep("CDS", len),
+                      start = vapply(loc, "[", 1L, FUN.VALUE=character(1)),
+                      end = vapply(loc, "[", 2L, FUN.VALUE=character(1)),
+                      score = rep(".", len),
+                      strand = ptt[["Strand"]],
+                      phase = rep("0", len),
+                      attributes = paste0("ID=cds", seq.int(0, len - 1),
+                                          ";product=", ptt[["Product"]]))
+    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
+                col.names=FALSE)
+    outfiles <- c(outfiles, outfile)
+    rm(ptt,gff) ## free memory
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+ftb2gff <- function (f) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  for (file in f) {
+    l <- readLines(file, n=1)
+    seqid <- strsplitN(l, split="\\s+", 2)
+    m <- regexpr("[A-Za-z]{2}([A-Za-z_])?\\d+(\\.\\d)?", seqid)
+    seqid <- strip_ext(regmatches(seqid, m))
+    
+    ft <- scan(file, sep="\t", comment.char=">", quiet=TRUE,
+               quote="", fill=TRUE,
+               what=list(start = character(),
+                         end = character(),
+                         key = character(),
+                         qualifier = character(),
+                         value = character()))
+    
+    pos_idx <- which(nzchar(ft[["start"]]))
+    gene_idx <- pos_idx[ft[["key"]][pos_idx] == "CDS"]
+    start <- as.integer(gsub('<|>', '', ft[["start"]][gene_idx]))
+    end <- as.integer(gsub('<|>', '', ft[["end"]][gene_idx]))
+    strand <- ifelse(start > end, '-', '+')
+    tmp_start <- ifelse(strand == '+', start, end)
+    end <- ifelse(strand == '+', end, start)
+    start <- tmp_start
+    
+    len <- length(start)
+    gff <- data.frame(stringsAsFactors=FALSE,
+                      seqid = rep(seqid, len), 
+                      source = rep("ftb", len),
+                      type = rep("CDS", len),
+                      start = start,
+                      end = end,
+                      score = rep(".", len),
+                      strand = strand,
+                      phase = rep("0", len),
+                      attributes = paste0("ID=cds", seq.int(0, len - 1)))
+    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
+                col.names=FALSE)
+    outfiles <- c(outfiles, outfile)
+    rm(ftb,gff) ## free memory
+  }
+   
+  return(invisible(outfiles))
+}
+
+
+gbk2gff <- function (f) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  for (file in f) {
+    #
+    #
+    outfiles <- c(outfiles, outfile)
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+glimmer2gff <- function (f) {
+  outfiles <- character()
+  wd <- unique(strip_ext(dirname(f), sep="\\.glimmer.*"))
+  for (file in f) {
+    glim <- scan(file, comment.char = ">", quote="",
+                quiet=TRUE, sep="",
+                what = list(id = character(),
+                            start = integer(),
+                            end = integer(),
+                            frame = character(),
+                            score = numeric()))
+    seqid <- strip_ext(basename(file))
+    len <- length(glim[["id"]])
+    dir <- glim[["end"]] > glim[["start"]]
+    start <- ifelse(dir, glim[["start"]], glim[["end"]])
+    end <- ifelse(dir, glim[["end"]], glim[["start"]])
+    strand <- ifelse(dir, "+", "-")
+    
+    max_gene_len <- ceiling((max(end) - min(start))*0.9)
+    idx <- end - start > max_gene_len
+    gff <- data.frame(stringsAsFactors=FALSE,
+                      seqid = rep(seqid, len)[!idx], 
+                      source = rep("glimmer", len)[!idx],
+                      type = rep("CDS", len)[!idx],
+                      start = start[!idx],
+                      end = end[!idx],
+                      score = rep(".", len)[!idx],
+                      strand = strand[!idx],
+                      phase = rep("0", len)[!idx],
+                      attributes = paste0("ID=", glim[["id"]],
+                                          ";frame=", glim[["frame"]],
+                                          ";score=", glim[["score"]])[!idx])
+    
+    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
+                col.names=FALSE)
+    outfiles <- c(outfiles, outfile)
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+fna_for_mercator <- function (f, type, mask = TRUE) {
+  type <- match.arg(type, c("fna", "gbk"))
+  
+  wd <- unique(dirname(f))
+  if (!file.exists(file.path(wd, ".mercator")))
+    stop("No '.mercator' directory available in ", wd)
+  
+  if (mask && !file.exists(file.path(wd, ".masked")))
+    stop("No '.masked' directory available in ", wd)
+
+  out <- switch(type,
+                fna=fna2fna(f, mask = mask),
+                gbk=gbk2fna(f, mask = mask))
+  
+  return(invisible(out))
+}
+
+
+fna2fna <- function (f, mask = TRUE) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  
+  if (mask)
+    f <- mask_genomes(f)
+  
+  for (file in f) {
+    # replace first line in fasta
+    fna <- readLines(file)
+    seqid <- strip_ext(basename(file))
+    outfile <- file.path(wd, ".mercator", "fasta", paste0(seqid, ".fna"))
+    fna[1] <- sprintf(">%s", seqid)
+    write(fna, file=outfile)
+    outfiles <- c(outfiles, outfile)
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+gbk2fna <- function (f, mask = TRUE) {
+  outfiles <- character()
+  wd <- unique(dirname(f))
+  
+  if (mask)
+    f <- mask_genomes(f)
+  
+  for (file in f) {
+
+    outfiles <- c(outfiles, outfile)
+  }
+  
+  return(invisible(outfiles))
+}
+
+
+run_mercator <- function (wd) {
+  
+  merc <- file.path(wd, ".mercator")
+  merc_fna <- file.path(merc, "fasta")
+  merc_sdb <- file.path(merc, "sdb")
+  merc_hit <- file.path(merc, "hits")
+  merc_out <- file.path(merc, "out")
+  dir.create(merc_out)
+  genomes <- strip_ext(dir(merc_fna))
+  
+  system(sprintf("mercator -i %s -o %s %s", 
+                 merc_hit, merc_out, paste(genomes, collapse=' ')))
+  
+  # comparative scaffolding of genome sequences
+  sdb_files <- dir(merc_sdb, full.names=TRUE)
+  for (sdb in sdb_files) {
+    system(sprintf("sdbAssemble %s %s < %s", sdb,
+                   file.path(merc_out, basename(sdb)),
+                   file.path(merc_out, paste0(strip_ext(basename(sdb)), ".agp"))))
+  }
+  
+  # Run phits2constraints to generate the "constraints" file
+  system(sprintf("phits2constraints -i %s -m %s < %s > %s",
+                 merc_hit, merc_out,
+                 file.path(merc_out, "pairwisehits"),
+                 file.path(merc_out, "constraints")))
+    
+  # Generate a guide tree in Newick format
+  guide_tree(wd)
+  
+  # refine breakpoints
+  find_breakpoints(wd)
+  
+  # generate alignment input for FSA
+  map_path <- dir(merc_out, "\\<better\\.map\\>")
+  segment_dir <- file.path(wd, "segments")
+  if (file.exists(segment_dir)) {
+    unlink(segment_dir, recursive=TRUE)
+  }
+  dir.create(segment_dir)
+  system(sprintf("makeAlignmentInput --map=%s %s %s",
+                 map_path, merc_out, segment_dir))
+  
+  return(invisible(segment_dir))
+}
+
+
+guide_tree <- function (wd) {
+  
+  merc <- file.path(wd, ".mercator")
+  merc_hits <- file.path(merc, "hits")
+  merc_out <- file.path(merc, "out")
+  
+  # check if all necessary files are present  
+  f <- dir(merc_out, full.names=TRUE)
+  if (sum(runs_pos <- grepl(pattern="\\<runs\\>", basename(f))) != 1L)
+    stop("'runs' file missing")
+  if (!any(grepl(pattern="\\.sdb\\>", basename(f))))
+    stop("sdb-files missing")
+  
+  merc_tree <- file.path(merc_out, "tree")
+  dir.create(merc_tree)
+  
+  runs <- read.table(f[runs_pos], header=FALSE, colClasses="integer")
+  runs <- runs[complete.cases(runs),]
+  names(runs) <- scan(f[grepl("genomes", f)], what="character")
+  
+  if (nrow(runs) == 0)
+    stop("There are no orthologous genes to generate a guide tree")
+  
+  if (nrow(runs) > 20) {
+    idx <- sample(seq_len(nrow(runs)), 20, replace = FALSE)
+    runs <- runs[idx,]
+  } 
+
+  match_genes(runs, merc)
+  
+  tree <- make_tree(merc_tree, "muscle", "K80", "nj")
+  write.tree(tree, file=file.path(merc_out, "treefile"))
+  
+  return(invisible(tree))
+}
+
+
+match_genes <- function(runs, merc) {
+  
+  merc_out <- file.path(merc, "out")
+  merc_hits <- file.path(merc, "hits")
+  tree_dir <- file.path(merc_out, "tree")
+  genomes <- names(runs)
+  
+  anchor <- list()
+  for (i in seq_along(genomes))
+    anchor[[i]] <- read.table(file.path(merc_hits, paste0(genomes[i], ".anchors")),
+                              sep="\t")
+  
+  sdbs <- dir(merc_out, "\\.sdb$", full.names=TRUE)
+  for (i in seq_along(genomes)) {
+    gene_idx <- match(runs[,i], anchor[[i]][,1])
+    seqname <- as.character(anchor[[i]][gene_idx, 2])
+    strand <- as.character(anchor[[i]][gene_idx, 3])
+    start <- anchor[[i]][gene_idx, 4]
+    end <- anchor[[i]][gene_idx, 5]
+    fasta <- list()
+    for (j in seq_along(gene_idx)) {
+      cat(system(sprintf("sdbExport -r --name=%s %s %s %s %s %s",
+                         paste0(genomes[i], ":", runs[j,i]),
+                         sdbs[i], seqname[j], start[j], end[j],
+                         strand[j]),
+                 intern=TRUE),
+          file=file.path(tree_dir, paste0("orf", j, ".fa")),
+          sep="\n", append=TRUE)
+    }
+  }
+  
+  return(invisible(TRUE))
+}
+
+
+#' conctruct NJ or BIONJ tree from one or more multi-FASTA files
+#' 
+#' @param fasta_dir Directory containing (a) multi-FASTA file(s).
+#' @param align One of 'clustal', 'muscle', or 'tcoffee'.
+#' @param dist.model See \code{\link[ape]{dist.dna}}
+#' @param tree One of 'nj', 'bionj', or 'fastme'.
+#' 
+#' @export
+make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") {
+  
+  stopifnot(require(ape))
+  fna <- dir(fna_dir, "\\.fa$", full.names=TRUE)
+  alignment <- list()
+  for (i in seq_along(fna)) {
+    dna <- ape::read.dna(fna[i], format="fasta")
+    alignment[[i]] <- switch(align,
+                             clustal=clustal(dna),
+                             muscle=muscle(dna),
+                             tcoffee=tcoffee(dna),
+                             message("Choose one of 'clustal', 'muscle', or 'tcoffee' for alignment"))
+    cat(sprintf("Aligning %s ...\n", basename(fna[i])))
+  }
+  
+  o <- NULL
+  for (aln in alignment) {
+    o <- c(o, list(order(labels(aln))))
+  }
+  for (i in seq_along(alignment)) {
+    alignment[[i]] <- alignment[[i]][o[[i]],]
+  }
+  
+  concat_aln <- do.call("cbind.DNAbin", c(alignment, check.names=FALSE))
+  rownames(concat_aln) <- 
+    sapply(strmatch(pattern="[^>].[^:]+", rownames(concat_aln), capture=FALSE),
+           "[", 1)
+  
+  dist <- dist.dna(concat_aln, model=dist.model)
+  tree <- switch(tree,
+                 nj=nj(dist),
+                 bionj=bionj(dist),
+                 fastme=fastme.bal(dist))
+  return(tree)
+}
+
+find_breakpoints <- function (wd) {
+  
+  merc <- file.path(wd, ".mercator")
+  merc_out <- file.path(merc, "out")
+  merc_break <- file.path(merc_out, "breakpoints")
+  dir.create(merc_break)
+  
+  f <- dir(merc_out, full.names=TRUE)
+  if (sum(map_pos <- grepl(pattern="\\<pre\\.map\\>", basename(f))) != 1L)
+    stop("'pre.map' is missing")
+  
+  if (sum(tree_pos <- grepl(pattern="\\<treefile\\>", basename(f))) != 1L)
+    stop("'treefile' is missing")
+  
+  pwd <- getwd()
+  setwd(merc_out)
+  on.exit(setwd(pwd))
+  
+  system("omap2hmap genomes < pre.map > pre.h.map")
+  system("makeBreakpointGraph --remove-colinear pre.h.map treefile")
+  system("makeBreakpointAlignmentInput --out-dir=breakpoints")
+  system("mavidAlignDirs --init-dir=breakpoints")
+  system("findBreakpoints -r 200 pre.h.map treefile edges breakpoints > myBreakpoints")
+  system("breakMap myBreakpoints < pre.h.map > better.h.map")
+  system("hmap2omap genomes < better.h.map > better.map")
+  system("omap2coordinates < better.map > coordinates")
+  
+  return(invisible(TRUE))
+}
+
+
