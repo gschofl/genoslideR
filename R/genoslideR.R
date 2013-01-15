@@ -27,4 +27,5 @@
 #' @import rentrez
 #' @import rmisc
 #' @import stringr
+#' @import RCurl
 NULL

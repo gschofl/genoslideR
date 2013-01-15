@@ -7,7 +7,7 @@
 #' @export
 align_genomes <- function (seg_dir, aligner = "fsa", force = FALSE, ...) {
   
-  aligner <- match.arg(aligner, c("fsa", "mavid"))
+  aligner <- match.arg(aligner, c("fsa"))
   
   if (is_segments_dir(seg_dir)) {
     seg_dir <- segments_dir(seg_dir)

@@ -58,8 +58,8 @@ update_position <- function (m, w, r) {
 
 
 get_alignment_gaps <- function (aln_path, genomes) {
-  #exec <- system.file("src", "runlvec.pl", package="genoslideR")
-  exec <- "./src/runlvec.pl"
+  exec <- system.file("src", "runlvec.pl", package="genoslideR")
+  #exec <- "./src/runlvec.pl"
   gap_ranges <- list()
   for (i in seq_along(genomes)) {
     pipe_desc <- pipe(paste(exec, aln_path, i))

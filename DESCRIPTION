@@ -37,3 +37,4 @@ Collate:
     'reciprocal-blat.R'
     'slice-alignment.R'
     'utils.R'
+    'utility-functions.R'

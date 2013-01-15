@@ -1,25 +1,48 @@
-require("BiocGenerics")
-require("IRanges")
-require("GenomicRanges")
-require("Biostrings")
-require("stringr")
-require("rentrez")
-require("biofiles")
-require("parallel")
+require(devtools)
+require(digest)
+genoslider <- as.package("~/R/Projects/Devel/genoslideR/")
+document(genoslider, clean=TRUE)
+load_all(genoslider)
 
-source("R/align-genomes.r")
-source("R/aligner.r")
-source("R/gapped_ranges.r")
-source("R/glimmer.r")
-source("R/import-alignment.r")
-source("R/import-annotation.r")
-source("R/mask-genomes.r")
-source("R/mercator.r")
-source("R/reciprocal-blat.r")
-source("R/slice-alignment.r")
-source("R/annotation.R")
-source("R/get_aln_range.R")
-source("R/utils.r")
+
+
+
+
+
+ncbi_bacteria("chlamyd.*", ".*", "~/local/workspace/Chlamydia")
+
+
+
+
+
+
+
+
+
+
+
+# require("BiocGenerics")
+# require("IRanges")
+# require("GenomicRanges")
+# require("Biostrings")
+# require("stringr")
+# require("rentrez")
+# require("biofiles")
+# require("parallel")
+# 
+# source("R/align-genomes.r")
+# source("R/aligner.r")
+# source("R/gapped_ranges.r")
+# source("R/glimmer.r")
+# source("R/import-alignment.r")
+# source("R/import-annotation.r")
+# source("R/mask-genomes.r")
+# source("R/mercator.r")
+# source("R/reciprocal-blat.r")
+# source("R/slice-alignment.r")
+# source("R/annotation.R")
+# source("R/get_aln_range.R")
+# source("R/utils.r")
 
 # alignment für Jochen
 # aln_dir <- normalizePath("~/bioinf/var/aln_jochen/")
