@@ -56,6 +56,10 @@ reciprocal_blat <- function (genomes, sdb, gff, out, sep = "-",
   if (length(genomes) < 2)
     stop("At least two genomes must be specified")
   
+  ## Dependencies
+  hasDependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
+                    "anchors2fa", "blat", "blat2hits"))
+  
   # Make sure that a gff and sdb file are present for all genomes
   for (genome in genomes) {
     gff_file <- file.path(gff, paste0(genome, ".gff"))

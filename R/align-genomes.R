@@ -5,7 +5,7 @@
 #' @param ... Other params.
 #' 
 #' @export
-align_genomes <- function (seg_dir, aligner = "fsa", force = FALSE, ...) {
+align_genomes <- function (seg_dir, aligner = "fsa", force = FALSE, mask = TRUE) {
   
   aligner <- match.arg(aligner, c("fsa"))
   

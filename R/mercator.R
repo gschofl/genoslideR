@@ -85,7 +85,8 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # generate mercator-readable gff files
   gff_files <- gff_for_mercator(anno_files, annotation, wd)
   
-  # generate mercator-readable fasta files
+  # generate mercator-readable fasta files and mask repeats
+  # if mask = TRUE
   fna_files <- fna_for_mercator(seq_files, wd, mask)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
@@ -104,7 +105,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # identified by the orthology map.
   segment_dir <- run_mercator(wd)
   
-  return(invisible(segment_dir))
+  return(segment_dir)
 }
 
 
