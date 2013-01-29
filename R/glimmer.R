@@ -1,15 +1,10 @@
 glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
                       cleanup = TRUE) {
   
-  progs <- c("long-orfs", "extract", "build-icm", "glimmer3", "elph",
-             "start-codon-distrib")
-  progs <- vapply(progs, hasCommand, logical(1))
-  
-  if (!all(progs)) {
-    stop("The following program(s) must be available in the PATH to run glimmer3: ",
-         sQuote(names(progs)[!progs]))
-  }
-  
+  ## check external dependencies
+  hasDependencies(c("glimmer3", "elph", "long-orfs", "extract",
+                    "build-icm", "start-codon-distrib"))
+
   glimmer_dir <- file.path(dirname(genome),
                            paste0(".glimmer_", strip_ext(basename(genome))))
   if (file.exists(glimmer_dir))

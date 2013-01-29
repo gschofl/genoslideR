@@ -25,18 +25,12 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   seq_files <- normalizePath(seq_files)
   
   # Make sure necessary external dependencies are available
-  cmd <- c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
-           "anchors2fa", "blat", "blat2hits", "mercator", "sdbAssemble",
-           "phits2constraints", "makeAlignmentInput", "sdbExport",
-           "muscle", "omap2hmap", "makeBreakpointGraph",
-           "makeBreakpointAlignmentInput", "mavidAlignDirs",
-           "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates")
-  lcmd <- hasCommand(cmd)
-  if (any(!lcmd)) {
-    stop("The following external program(s) must be installed: ", 
-         paste(cmd[!lcmd], collapse=", "),
-         "\n\nTry running 'install_genoslider_dependencies()''")
-  }
+  hasDependencies(c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
+                    "anchors2fa", "blat", "blat2hits", "mercator",
+                    "sdbAssemble", "phits2constraints", "makeAlignmentInput",
+                    "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
+                    "makeBreakpointAlignmentInput", "mavidAlignDirs",
+                    "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
 
   if (is.null(anno_files)) {
     if (annotation != "glimmer3")

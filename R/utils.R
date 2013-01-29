@@ -67,3 +67,12 @@ is_gbk <- function(f) {
   grepl("^LOCUS", l[1]) && grepl("^DEFINITION", l[2])
 }
 
+hasDependencies <- function(cmd) {
+  lcmd <- hasCommand(cmd)
+  if (any(!lcmd)) {
+    stop("The following external program(s) must be installed: ", 
+         paste(cmd[!lcmd], collapse=", "),
+         "\n\nTry running 'install_genoslider_dependencies()''")
+  }
+  invisible()
+}
