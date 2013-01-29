@@ -1,5 +1,16 @@
 mask_genomes <- function(fasta) {
-  stopifnot(require(parallel))
+  
+  ## check dependencies
+  cmd <- c("awk", "build_lmer_table", "RepeatScout", "filter-stage-1.prl",
+           "RepeatMasker", "nmerge", "faSoftMask")
+  lcmd <- hasCommand(cmd)
+  if (any(!lcmd)) {
+    stop("The following external program(s) must be installed: ", 
+         paste(cmd[!lcmd], collapse=", "),
+         "\n\nTry 'install_genoslider_dependencies()'\n",
+         "or run mercator() with mask=FALSE")
+  }
+  
   ncores <- detectCores() - 1 
   masked <- mclapply(fasta, repeatmasker, mc.cores=ncores)
   return(masked)

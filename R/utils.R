@@ -55,3 +55,15 @@ capitalize <- function(x) {
   substring(x, 1, 1) <- toupper(substring(x, 1, 1))
   x
 }
+
+is_fasta <- function(f) {
+  l <- readLines(f, n=2)
+  grepl("^>", l[1]) && 
+    all(unique(strsplit(l[2], "")[[1]]) %in% c("A","T","G","C","a","t","g","c"))
+}
+
+is_gbk <- function(f) {
+  l <- readLines(f, n=2)
+  grepl("^LOCUS", l[1]) && grepl("^DEFINITION", l[2])
+}
+

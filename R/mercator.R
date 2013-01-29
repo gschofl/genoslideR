@@ -1,53 +1,50 @@
 #' Run mercator to build a homology map and create orthologous segments
 #' that can be aligned using FSA
 #' 
-#' @param seq_files Path to sequence files.
-#' @param seq_type Type of sequence file ('fasta' or 'genbank').
-#' @param anno_files (Optional) Path to annotations. 
+#' @param seq_files Path to sequence files ('fasta' or 'genbank').
+#' @param anno_files (Optional) Path to annotation files. 
 #' @param anno_type Type of annotation ('glimmer3', 'genbank', 'gff', 
 #' 'ptt', or 'feature_table').
 #' @param mask Softmask sequence before aligning.
 #' 
 #' @export
-mercator <- function (seq_files, seq_type = "fasta", anno_files = NULL,
-                      anno_type = "glimmer3", mask = TRUE) {
+mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
+                      wd = NULL, mask = TRUE) {
   
-  
-  sequence <- match.arg(seq_type, c("fasta", "genbank"))
   annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
   
-  # Make sure necessary external programs are available
-  progs <- c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
-             "anchors2fa", "blat", "blat2hits", "mercator", "sdbAssemble",
-             "phits2constraints", "makeAlignmentInput", "sdbExport",
-             "muscle", "omap2hmap", "makeBreakpointGraph",
-             "makeBreakpointAlignmentInput", "mavidAlignDirs",
-             "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates")
-  
-  progs <- vapply(progs, hasCommand, logical(1))
-  
-  if (any(!progs)) {
-    stop("The following external program(s) must be installed: ", 
-         paste(names(progs[!progs]), collapse=", "))
+  # if not specified the working directory is the parent directory of all
+  # sequence files
+  if (is.null(wd)) {
+    wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
+                 strsplit(dirname(seq_files), .Platform$file.sep))
+    wd <- normalizePath(paste(wd, collapse=.Platform$file.sep))
   }
   
-  # point the mercator function to a directory containing sequence and
-  # annotation files and provide the respective file extensions.
-  #
-  # supported sequence formats: fna, gbk
-  # supported annotation formats: gbk, gff, ptt
-  
-  # get annotation and sequence files
-  wd <- normalizePath(dirname(seq_files[1]))
+  # get sequence files
   seq_files <- normalizePath(seq_files)
   
+  # Make sure necessary external dependencies are available
+  cmd <- c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
+           "anchors2fa", "blat", "blat2hits", "mercator", "sdbAssemble",
+           "phits2constraints", "makeAlignmentInput", "sdbExport",
+           "muscle", "omap2hmap", "makeBreakpointGraph",
+           "makeBreakpointAlignmentInput", "mavidAlignDirs",
+           "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates")
+  lcmd <- hasCommand(cmd)
+  if (any(!lcmd)) {
+    stop("The following external program(s) must be installed: ", 
+         paste(cmd[!lcmd], collapse=", "),
+         "\n\nTry running 'install_genoslider_dependencies()''")
+  }
+
   if (is.null(anno_files)) {
     if (annotation != "glimmer3")
       stop("No annotation files provided")
     else
       anno_files <- vapply(seq_files, glimmer3, character(1))
   }
-      
+  
   anno_files <- normalizePath(anno_files)
 
   if (length(anno_files) != length(seq_files))
@@ -60,16 +57,28 @@ mercator <- function (seq_files, seq_type = "fasta", anno_files = NULL,
   if (mask) {
     mask_dir <- file.path(wd, ".masked")
     if (file.exists(mask_dir)) {
-      warning("An existing '.masked' directory has been overwritten in the working directory")
-      unlink(mask_dir, recursive=TRUE)
+      warning("A '.masked' directory exists in ", wd, immediate.=TRUE)
+      ans <- readline("Overwrite [y/n]? ")
+      if (ans == "y") {
+        unlink(mask_dir, recursive=TRUE)
+      } else {
+        return(NULL)
+      }
     }
     dir.create(mask_dir)
   }
   
   merc <- file.path(wd, ".mercator")
   if (file.exists(merc)) {
-    warning("An existing '.mercator' directory has been overwritten in the working directory")
-    unlink(merc, recursive=TRUE)
+    if (file.exists(mask_dir)) {
+      warning("A '.mercator' directory exists in ", wd, immediate.=TRUE)
+      ans <- readline("Overwrite [y/n]? ")
+      if (ans == "y") {
+        unlink(merc, recursive=TRUE)
+      } else {
+        return(NULL)
+      }
+    }
   }
   
   merc_gff <- file.path(merc, "gff")
@@ -80,10 +89,10 @@ mercator <- function (seq_files, seq_type = "fasta", anno_files = NULL,
     dir.create(dir, recursive=TRUE)
   
   # generate mercator-readable gff files
-  gff_files <- gff_for_mercator(anno_files, annotation)
+  gff_files <- gff_for_mercator(anno_files, annotation, wd)
   
   # generate mercator-readable fasta files
-  fna_files <- fna_for_mercator(seq_files, sequence, mask)
+  fna_files <- fna_for_mercator(seq_files, wd, mask)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
   invisible(mapply(function(x, y)
@@ -105,27 +114,30 @@ mercator <- function (seq_files, seq_type = "fasta", anno_files = NULL,
 }
 
 
-gff_for_mercator <- function (f, type) {
+gff_for_mercator <- function (f, type, wd) {
+  
+  if (missing(wd)) {
+    stop("No working directory provided")
+  }
+  
   type <- match.arg(type, c("gff", "ptt", "gbk", "ftable","glimmer3"))
   
-  wd <- unique(strip_ext(dirname(f), sep="\\.glimmer.*"))
   if (!file.exists(file.path(wd, ".mercator")))
     stop("No '.mercator' directory available in ", wd)
   
   out <- switch(type,
-                gff=gff2gff(f),
-                ptt=ptt2gff(f),
-                gbk=gbk2gff(f),
-                ftable=ftb2gff(f),
-                glimmer3=glimmer2gff(f))
+                gff=gff2gff(f, wd),
+                ptt=ptt2gff(f, wd),
+                gbk=gbk2gff(f, wd),
+                ftable=ftb2gff(f, wd),
+                glimmer3=glimmer2gff(f, wd))
   
   return(invisible(out))
 }
 
 
-gff2gff <- function (f) {
+gff2gff <- function (f, wd) {
   outfiles <- character()
-  wd <- unique(dirname(f))
   for (file in f) {
     
     l <- readLines(file)
@@ -172,9 +184,8 @@ gff2gff <- function (f) {
 }
 
 
-ptt2gff <- function (f) {
+ptt2gff <- function (f, wd) {
   outfiles <- character()
-  wd <- unique(dirname(f))
   for (file in f) {
     skip <- sum(count.fields(file, sep="\t") < 9)
     ptt <- scan(file, skip = skip + 1, quote="",
@@ -214,9 +225,8 @@ ptt2gff <- function (f) {
 }
 
 
-ftb2gff <- function (f) {
+ftb2gff <- function (f, wd) {
   outfiles <- character()
-  wd <- unique(dirname(f))
   for (file in f) {
     l <- readLines(file, n=1)
     seqid <- strsplitN(l, split="\\s+", 2)
@@ -262,9 +272,8 @@ ftb2gff <- function (f) {
 }
 
 
-gbk2gff <- function (f) {
+gbk2gff <- function (f, wd) {
   outfiles <- character()
-  wd <- unique(dirname(f))
   for (file in f) {
     #
     #
@@ -275,9 +284,8 @@ gbk2gff <- function (f) {
 }
 
 
-glimmer2gff <- function (f) {
+glimmer2gff <- function (f, wd) {
   outfiles <- character()
-  wd <- unique(strip_ext(dirname(f), sep="\\.glimmer.*"))
   for (file in f) {
     glim <- scan(file, comment.char = ">", quote="",
                 quiet=TRUE, sep="",
@@ -318,10 +326,20 @@ glimmer2gff <- function (f) {
 }
 
 
-fna_for_mercator <- function (f, type, mask = TRUE) {
-  type <- match.arg(type, c("fna", "gbk"))
+fna_for_mercator <- function (f, wd, mask = TRUE) {
   
-  wd <- unique(dirname(f))
+  if (missing(wd)) {
+    stop("No working directory provided")
+  }
+  
+  type <- if (all(vapply(f, is_fasta, logical(1)))) {
+    "fna"
+  } else if (all(vapply(f, is_gbk, logical(1)))) {
+    "gbk"
+  } else {
+    "other"
+  }
+
   if (!file.exists(file.path(wd, ".mercator")))
     stop("No '.mercator' directory available in ", wd)
   
@@ -329,20 +347,18 @@ fna_for_mercator <- function (f, type, mask = TRUE) {
     stop("No '.masked' directory available in ", wd)
 
   out <- switch(type,
-                fna=fna2fna(f, mask = mask),
-                gbk=gbk2fna(f, mask = mask))
+                fna=fna2fna(f, wd, mask = mask),
+                gbk=gbk2fna(f, wd, mask = mask),
+                other=stop("Sequence files must be either in FASTA or GBK format"))
   
   return(invisible(out))
 }
 
 
-fna2fna <- function (f, mask = TRUE) {
+fna2fna <- function (f, wd, mask = TRUE) {
   outfiles <- character()
-  wd <- unique(dirname(f))
-  
   if (mask)
     f <- mask_genomes(f)
-  
   for (file in f) {
     # replace first line in fasta
     fna <- readLines(file)
@@ -352,23 +368,18 @@ fna2fna <- function (f, mask = TRUE) {
     write(fna, file=outfile)
     outfiles <- c(outfiles, outfile)
   }
-  
   return(invisible(outfiles))
 }
 
 
-gbk2fna <- function (f, mask = TRUE) {
+gbk2fna <- function (f, wd, mask = TRUE) {
+  stop("Extraction of sequences from GBK files isn't implemented yet")
   outfiles <- character()
-  wd <- unique(dirname(f))
-  
   if (mask)
     f <- mask_genomes(f)
-  
   for (file in f) {
-
     outfiles <- c(outfiles, outfile)
   }
-  
   return(invisible(outfiles))
 }
 

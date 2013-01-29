@@ -1,0 +1,17 @@
+\name{file_size}
+\alias{file_size}
+\title{Quickly look up the size of a file}
+\usage{
+  file_size(files, unit = NULL)
+}
+\arguments{
+  \item{files}{Path(s) to files.}
+
+  \item{unit}{Return file size in bytes (B, default),
+  kilobytes (kB), megabytes (MB), gigabytes (GB), or
+  terabytes (TB).}
+}
+\description{
+  Quickly look up the size of a file
+}
+

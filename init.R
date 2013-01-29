@@ -1,22 +1,23 @@
 require(devtools)
 require(digest)
+require(genoslideR)
 genoslider <- as.package("~/R/Projects/Devel/genoslideR/")
 document(genoslider, clean=TRUE)
 load_all(genoslider)
 
 
+wd <- "~/local/workspace/Chlamydia"
+ncbi_bacteria("chlamyd.*", "gbk|gff|fna|ptt|Glimmer3", wd)
 
+seq_files <- dir(wd, pattern="*.fna", recursive=TRUE, full.names=TRUE)
+seq_files <- seq_files[file_size(seq_files, "kB") > 500]
 
+anno_files <- dir(wd, pattern="*.ptt", recursive=TRUE, full.names=TRUE)
+anno_files <- anno_files[file_size(anno_files, "kB") > 10]
 
+mercator(seq_files, anno_files, anno_type="ptt", mask=TRUE)
 
-ncbi_bacteria("chlamyd.*", ".*", "~/local/workspace/Chlamydia")
-
-
-
-
-
-
-
+install_genoslider_dependencies()
 
 
 

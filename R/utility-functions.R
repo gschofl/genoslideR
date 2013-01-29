@@ -67,3 +67,52 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
     }
   }
 }
+
+#' Install external dependencies for genoslideR
+#' 
+#' Works only on Ubuntu (and possibly Debian)
+#' 
+#' @param sudo if \code{TRUE} install with sudo
+#'
+#' @export
+install_genoslider_dependencies <- function (sudo = TRUE) {
+  
+  if (!hasCommand("zsh")) {
+    stop("Install 'zsh' and then try again ...")
+  }
+  
+  if (is_empty(Sys.getenv("TERM"))) {
+    term_emul <- c("gnome-terminal", "konsole", "xterm")
+    term_emul <- term_emul[hasCommand(term_emul)][1]
+    if (is.na(term_emul)) {
+      stop("No terminal emulator found")
+    }
+    term <- paste(term_emul, "-e")
+  } else {
+    term <- ""
+  }
+
+  exec <- system.file("src", "install_dependencies_ubuntu.sh", package="genoslideR")
+  if (sudo)
+    system(paste(term, "'sudo", exec, "'"))
+  else
+    system(paste(term, "'", exec, "'"))
+
+}
+
+#' Quickly look up the size of a file
+#' 
+#' @param files Path(s) to files.
+#' @param unit Return file size in bytes (B, default), kilobytes (kB),
+#' megabytes (MB), gigabytes (GB), or terabytes (TB). 
+#' 
+#' @export
+file_size <- function(files, unit = NULL) {
+  unit <- match.arg(unit, c("B", "kB", "MB", "GB", "TB"))
+  file.info(files)$size / switch(unit,
+                                 B=1,
+                                 kB=1024,
+                                 MB=1024^2,
+                                 GB=1024^3,
+                                 TB=1024^4)
+}

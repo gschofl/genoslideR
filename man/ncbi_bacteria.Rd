@@ -20,6 +20,7 @@
   \code{FALSE}}
 }
 \description{
-  Get genomes from ftp://ftp.ncbi.nih.gov/genomes/Bacteria/
+  Get genomes from
+  \url{ftp://ftp.ncbi.nih.gov/genomes/Bacteria/}
 }
 
