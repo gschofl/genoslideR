@@ -58,8 +58,7 @@ align_mercator_segments <- function (seg_dir, aligner = "fsa",
   
   segments <- normalizePath(dir(seg_dir, "^\\d+$", full.names=TRUE))
   if (!force &&
-        all(vapply(file.path(segments, "mavid.mfa"), file.exists, logical(1))) &&
-        all(vapply(file.path(segments, "mavid.mfa"), file_size, numeric(1)) > 0L)) {
+        all(vapply(file.path(segments, "mavid.mfa"), file.exists, logical(1)))) {
     return(invisible(segments_dir))
   }
   
@@ -70,8 +69,6 @@ align_mercator_segments <- function (seg_dir, aligner = "fsa",
     aln.opts <- list(c="cons")
   }
   ALN <- match.fun(aligner)
-  
-  segments <- segments[!vapply(file.path(segments, "mavid.mfa"), file_size, numeric(1)) > 0L]
   cwd <- getwd()
   ncores <- detectCores() - 1
   mclapply(segments, function (seg) {
