@@ -6,7 +6,7 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
-import_annotation_from_ptt <- function(file = anno[2], seqid = NULL) {
+import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
   
   skip <- sum(count.fields(file, sep="\t") < 9)
   ptt <- scan(file, skip = skip + 1, quote="",
@@ -31,10 +31,10 @@ import_annotation_from_ptt <- function(file = anno[2], seqid = NULL) {
   
   gene <- sub('^-$', NA, ptt[["Gene"]])
   synonym <- sub('^-$', NA, ptt[["Synonym"]])
-  names <- ifelse(nzchar(gene), gene, synonym)
+  names <- ifelse(is.na(gene), synonym, gene)
   proteinID <- ptt[["PID"]]
   product <- ptt[["Product"]]
-    
+
   ## missing from ptt files
   l <- length(start)
   geneID <- character(l)
@@ -52,13 +52,13 @@ import_annotation_from_ptt <- function(file = anno[2], seqid = NULL) {
     }
   }
   
-  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
-                 geneID, proteinID, product)
+  create_GRanges(seqid, start, width, strand, names,
+                 type = type, gene = gene, synonym = synonym,
+                 geneID = geneID, proteinID = proteinID, product = product)
 }
 
 
-import_annotation_from_tbl <- function(file, id=NULL, description=NULL,
-                                       sep="\t") {
+import_annotation_from_tbl <- function(file = files[2], seqid = NULL, sep="\t") {
   
   header <- unlist(strsplit(readLines(file, n =  1), sep))
   if (all(c("start", "end") %ni% header)) {
@@ -66,12 +66,9 @@ import_annotation_from_tbl <- function(file, id=NULL, description=NULL,
   }
   
   table <- read.table(file, sep=sep, header=TRUE, quote="", as.is=TRUE)
-  
   start <- as.integer(table[["start"]])
   width <- as.integer(table[["end"]]) - start + 1L
-  
-  table[["start"]] <- NULL
-  table[["end"]] <- NULL
+  table[["start"]] <- table[["end"]] <- NULL
   
   if (is.null(table[["strand"]])) {
     strand <- rep(1L, length(start)) 
@@ -87,15 +84,7 @@ import_annotation_from_tbl <- function(file, id=NULL, description=NULL,
     table[["names"]] <- NULL
   }
   
-  annotation <- if (is_empty(table)) {
-    RangedData(IRanges(start = start, width = width),
-               names, strand, space = id, universe = description)
-  } else {
-    RangedData(IRanges(start = start, width = width),
-               names, strand, as.list(table), space = id, universe = description)
-  }
-  
-  annotation
+  create_GRanges(seqid, start, width, strand, names, table)
 }
 
 
@@ -142,8 +131,9 @@ import_annotation_from_ftb <- function(file) {
     type[i] <- ft[["key"]][j][which(nzchar(ft[["key"]][j]))[1]]
   }
   
-  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
-                 geneID, proteinID, product)
+  create_GRanges(seqid, start, width, strand, names,
+                 type = type, gene = gene, synonym = synonym,
+                 geneID = geneID, proteinID = proteinID, product = product)
 }
 
 
@@ -220,8 +210,9 @@ import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA"
   synonym <- vapply(p_attr, "[", "locus_tag", FUN.VALUE=character(1))
   gene <- vapply(p_attr, "[", "gene", FUN.VALUE=character(1))
  
-  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
-                 geneID, proteinID, product)
+  create_GRanges(seqid, start, width, strand, names,
+                 type = type, gene = gene, synonym = synonym,
+                 geneID = geneID, proteinID = proteinID, product = product)
 }
 
 
@@ -255,9 +246,7 @@ parse_attr <- function (anno) {
 }
 
 
-create_GRanges <- function (seqid, start, width, strand, names = NULL,
-                            type = NULL, gene = NULL, synonym = NULL,
-                            geneID = NULL, proteinID = NULL, product = NULL) {
+create_GRanges <- function (seqid, start, width, strand, names, ...) {
   
   seqinfo <- tryCatch({
     x <- docsum(esummary(esearch(seqid, "nuccore")))
@@ -268,12 +257,9 @@ create_GRanges <- function (seqid, start, width, strand, names = NULL,
     Seqinfo(seqnames=seqid)
   })
   
-  gr <- GRanges(seqnames=Rle(seqid),
-                ranges=IRanges(start = start, width = width, names = names),
-                strand=Rle(strand), type, gene, synonym,
-                geneID, proteinID, product, seqinfo = seqinfo) 
-  gr
-  
+  GRanges(seqnames=Rle(seqid),
+          ranges=IRanges(start = start, width = width, names = names),
+          strand=Rle(strand), ..., seqinfo = seqinfo) 
 }
 
 

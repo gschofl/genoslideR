@@ -21,7 +21,7 @@ annotationList <- function(files = anno, type = "genbank", ...) {
   }
   
   if (type == "ptt") {
-    if (is.null(id <- list(...)[["seqid"]])) {
+    if (is.null(seqid <- list(...)[["seqid"]])) {
       anno <- GRangesList(lapply(files, import_annotation_from_ptt))
       
     } else {
@@ -34,23 +34,17 @@ annotationList <- function(files = anno, type = "genbank", ...) {
   }
   
   if (type == "table") {
-    anno <- if (is.null(id <- list(...)[["id"]])) {
-      stop("Provide identifiers (e.g. accession numbers) for the annotation files.")
+    if (is.null(seqid <- list(...)[["seqid"]])) {
+      stop("Provide sequence identifiers (accession numbers) for the annotation files.")
     } else {
-      if (length(id) != length(files))
-        stop("Provide as many identifiers as annotation files")
-      desc <- list(...)[["desc"]]
-      if (length(desc) == 0)
-        desc <- NA_character_
-      length <- list(...)[["length"]]
-      if (length(length) == 0)
-        length <- NA_integer_
-      sep <- list(...)[["sep"]]
-      sep <- if (is.null(sep)) "\t"
-      mapply(import_annotation_from_table, file=files, id=id,
-             desc=as.character(desc), length=as.integer(length),
-             sep=sep, SIMPLIFY=FALSE, USE.NAMES=FALSE)
-    }   
+      if (length(seqid) != length(files))
+        stop("Provide as many sequence identifiers as annotation files")
+      sep <- list(...)[["sep"]] %||% "\t"
+      anno <- GRangesList(mapply(import_annotation_from_tbl, file=files, 
+                                 seqid=seqid, sep=sep, SIMPLIFY=FALSE,
+                                 USE.NAMES=FALSE))
+    }
+    names(anno) <- seqnames(seqinfo(anno))
   } 
   
   if (type == "ftable") {
@@ -222,7 +216,7 @@ annotatedAlignment <- function (aln, anno, type, ...) {
   if (all(idx == FALSE)) {
     stop("The annotation file names don't match with the genome names in the alignment")
   }
-  alignment
+  
   anno <- sort(anno[idx])
   annotation <- annotationList(anno, type, ...)
   
