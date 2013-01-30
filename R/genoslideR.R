@@ -28,4 +28,7 @@
 #' @import rmisc
 #' @import stringr
 #' @import RCurl
+#' @import ape
+#' @importFrom XML xpathSApply
+#' @importFrom XML xmlValue
 NULL
