@@ -18,6 +18,7 @@ Imports:
     GenomicRanges,
     Biostrings,
     ape,
+    XML,
     stringr,
     rmisc,
     biofiles,

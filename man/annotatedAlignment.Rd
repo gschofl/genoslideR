@@ -1,6 +1,5 @@
 \name{annotatedAlignment}
 \alias{annotatedAlignment}
-\alias{annotatedAlignment-class}
 \title{annotatedAlignment}
 \usage{
   annotatedAlignment(aln, anno, type, ...)
@@ -14,7 +13,7 @@
 
   \item{type}{Type of annotation files.}
 
-  \item{...}{Other stuff}
+  \item{...}{seqid (accession numbers)}
 }
 \description{
   \dQuote{annotatedAlignment} is an S4 class that provides

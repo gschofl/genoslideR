@@ -1,14 +1,20 @@
+#' Import aligned mercator segments or a multifasta alignment
+#' 
+#' @param alnPath Path to mercator segments or a multifasta segment
+#' @param writeToMFA if \code{TRUE} merge mercator segments into a
+#' single multi fasta file and write to file "aln.mfa"  
+#'
 #' @export
-importAlignment <- function (aln) {
+importAlignment <- function (alnPath, writeToMFA = TRUE) {
   
-  if (is_segments_dir(aln)) {
-    seq <- merge_mercator_segments(segments_dir(aln))
-    aln <- metadata(seq)[["path"]]
+  if (is_segments_dir(alnPath)) {
+    seq <- merge_mercator_segments(segments_dir(alnPath), write=writeToMFA)
+    alnPath <- metadata(seq)[["path"]]
   } else {
-    seq <- readDNAStringSet(aln)
+    seq <- readDNAStringSet(alnPath)
   }
   
-  map <- header2map(names(seq), aln)
+  map <- header2map(names(seq), alnPath)
   names(seq) <- names(map[["map"]])
   metadata(seq) <- map
   seq
