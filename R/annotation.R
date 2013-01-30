@@ -19,18 +19,18 @@ annotationList <- function(files = anno, type = "genbank", ...) {
     anno <- GRangesList(lapply(files, import_annotation_from_gff))
     names(anno) <- seqnames(seqinfo(anno))
   }
-
+  
   if (type == "ptt") {
-    if (is.null(id <- list(...)[["id"]])) {
+    if (is.null(id <- list(...)[["seqid"]])) {
       anno <- GRangesList(lapply(files, import_annotation_from_ptt))
-      names(anno) <- unlist(lapply(anno, function (a) levels(space(a))))
+      
     } else {
-      if (length(id) != length(files))
-        stop("Provide as many identifiers as annotation files")
+      if (length(seqid) != length(files))
+        stop("Provide as many sequence identifiers (accession numbers) as annotation files")
       anno <- GRangesList(mapply(import_annotation_from_ptt, file=files,
-                                    id=id, SIMPLIFY=FALSE, USE.NAMES=FALSE))
-      names(anno) <- id
+                                 seqid=seqid, SIMPLIFY=FALSE, USE.NAMES=FALSE))
     }
+    names(anno) <- seqnames(seqinfo(anno))
   }
   
   if (type == "table") {
@@ -196,7 +196,7 @@ setClass("annotatedAlignment",
 #' containing aligned orthologous segments.
 #' @param anno Paths to annotation files.
 #' @param type Type of annotation files.
-#' @param ... Other stuff
+#' @param ... seqid (accession numbers)
 #' 
 #' @export
 annotatedAlignment <- function (aln, anno, type, ...) {
@@ -222,7 +222,7 @@ annotatedAlignment <- function (aln, anno, type, ...) {
   if (all(idx == FALSE)) {
     stop("The annotation file names don't match with the genome names in the alignment")
   }
-  
+  alignment
   anno <- sort(anno[idx])
   annotation <- annotationList(anno, type, ...)
   

@@ -6,7 +6,7 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
-import_annotation_from_ptt <- function(file = anno, id = NULL) {
+import_annotation_from_ptt <- function(file = anno[2], seqid = NULL) {
   
   skip <- sum(count.fields(file, sep="\t") < 9)
   ptt <- scan(file, skip = skip + 1, quote="",
@@ -20,7 +20,6 @@ import_annotation_from_ptt <- function(file = anno, id = NULL) {
                           Code = character(),
                           COG = character(),
                           Product = character()))
-  
   
   location <- strsplit(ptt[["Location"]], "..", fixed=TRUE)
   start <- as.integer(vapply(location, "[", 1L, FUN.VALUE=character(1),
@@ -41,25 +40,20 @@ import_annotation_from_ptt <- function(file = anno, id = NULL) {
   geneID <- character(l)
   type <- rep("CDS", l)
 
-  ## metadata - accession/id, description, length
-  first_line <- readLines(file, n=1)
-  description <- strsplitN(first_line, " - ", 1)
-  length <- as.integer(strsplitN(strsplitN(first_line, " - ", 2), "\\.\\.", 2))
-  
-  if (is.null(id)) {
-    # attempt to fetch accession from the interwebs
-    x <- suppressMessages(content(efetch(proteinID[1], "protein")))
-    x <- select(x, keys="coded_by", cols="coded_by")
+  if (is.null(seqid)) {
+    # attempt to fetch accession number
+    x <- content(efetch(proteinID[1], "protein", "gp", "xml"))
+    xpath <- '//GBQualifier[contains(GBQualifier_name, "coded_by")]/GBQualifier_value'
+    x <- xpathSApply(x, xpath, xmlValue)
     if (is_empty(x)) {
       stop("No accession number could be retrieved as identifier for these annotations. Provide an identifier.")
     } else {
-      id <- strip_ext(accession(as.gbLocation(x)))
+      seqid <- strip_ext(accession(as.gbLocation(x)))
     }
   }
   
-  RangedData(IRanges(start = start, width = width),
-             names, strand, gene, synonym, geneID, proteinID,
-             type, product, space = id, universe = description)
+  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
+                 geneID, proteinID, product)
 }
 
 
@@ -110,7 +104,7 @@ import_annotation_from_ftb <- function(file) {
   l <- readLines(file, n=1)
   seqId <- strsplitN(l, split="\\s+", 2)
   m <- regexpr("[A-Za-z]{2}([A-Za-z_])?\\d+(\\.\\d)?", seqId)
-  id <- strip_ext(regmatches(seqId, m))
+  seqid <- strip_ext(regmatches(seqId, m))
   
   ft <- scan(file, sep="\t", comment.char=">", quiet=TRUE,
              quote="", fill=TRUE,
@@ -148,20 +142,8 @@ import_annotation_from_ftb <- function(file) {
     type[i] <- ft[["key"]][j][which(nzchar(ft[["key"]][j]))[1]]
   }
   
-  seqinfo <- tryCatch({
-    x <- content(esummary(esearch(id, "nuccore")))
-    Seqinfo(seqnames = unlist(x["Caption"], use.names=FALSE),
-            seqlengths = as.numeric(unlist(x["Length"], use.names=FALSE)),
-            genome = unlist(x["Title"], use.names=FALSE))
-  }, error = function (e) {
-    Seqinfo(seqnames=id)
-  })
-  
-  gr <- GRanges(seqnames=Rle(id),
-                ranges=IRanges(start = start, width = width, names = names),
-                strand=Rle(strand), type, gene, synonym,
-                geneID, proteinID, product, seqinfo = seqinfo) 
-  gr
+  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
+                 geneID, proteinID, product)
 }
 
 
@@ -214,7 +196,6 @@ import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA"
                    FUN.VALUE=integer(1), USE.NAMES=FALSE)
   attr <- parse_attr(gff$attributes)
   
-  
   ## misc_features have type region in gff; for the Seqinfo we want only the
   ## gff region with the GenBank key Source
   src_idx <- which(vapply(attr, "[", "gbkey", FUN.VALUE=character(1)) == "Src")
@@ -224,17 +205,7 @@ import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA"
   } else if (length(src_idx) < 1) {
     warning("No 'Source' field in ", basename(file))
   }
-  id <- strip_ext(gff[['seqid']][src_idx]) %||% NA_character_
-  isCircular <- unlist(attr[src_idx])["Is_circular"] == "true" %||% NA
-  seqinfo <- tryCatch({
-    x <- docsum(esummary(esearch(id, "nuccore")))
-    Seqinfo(seqnames = unlist(x["Caption"], use.names=FALSE),
-            seqlengths = as.numeric(unlist(x["Length"], use.names=FALSE)),
-            isCircular = unname(isCircular),
-            genome = unlist(x["Title"], use.names=FALSE))
-  }, error = function (e) {
-    Seqinfo(seqnames=id)
-  })
+  seqid <- strip_ext(gff[['seqid']][src_idx])
   
   f_attr <- attr[f_idx]
   p_attr <- attr[p_idx]
@@ -249,11 +220,8 @@ import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA"
   synonym <- vapply(p_attr, "[", "locus_tag", FUN.VALUE=character(1))
   gene <- vapply(p_attr, "[", "gene", FUN.VALUE=character(1))
  
-  gr <- GRanges(seqnames=Rle(id),
-                ranges=IRanges(start = start, width = width, names = names),
-                strand=Rle(strand), type, gene, synonym,
-                geneID, proteinID, product, seqinfo = seqinfo) 
-  gr
+  create_GRanges(seqid, start, width, strand, names, type, gene, synonym,
+                 geneID, proteinID, product)
 }
 
 
@@ -285,4 +253,27 @@ parse_attr <- function (anno) {
              nm=vapply(kv, "[", 1L, FUN.VALUE=character(1)))
   })
 }
+
+
+create_GRanges <- function (seqid, start, width, strand, names = NULL,
+                            type = NULL, gene = NULL, synonym = NULL,
+                            geneID = NULL, proteinID = NULL, product = NULL) {
+  
+  seqinfo <- tryCatch({
+    x <- docsum(esummary(esearch(seqid, "nuccore")))
+    Seqinfo(seqnames = unlist(x["Caption"], use.names=FALSE),
+            seqlengths = as.numeric(unlist(x["Length"], use.names=FALSE)),
+            genome = unlist(x["Title"], use.names=FALSE))
+  }, error = function (e) {
+    Seqinfo(seqnames=seqid)
+  })
+  
+  gr <- GRanges(seqnames=Rle(seqid),
+                ranges=IRanges(start = start, width = width, names = names),
+                strand=Rle(strand), type, gene, synonym,
+                geneID, proteinID, product, seqinfo = seqinfo) 
+  gr
+  
+}
+
 
