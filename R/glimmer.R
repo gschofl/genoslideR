@@ -1,3 +1,10 @@
+#' Ab initio genome annotation using glimmer3
+#'
+#' @param genome Path to a genome file in fasta format
+#' @param glimmeropts Options for glimmer3
+#' @param cleanup Clean up intermediate files.
+#' 
+#' @export
 glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
                       cleanup = TRUE) {
   

@@ -52,21 +52,21 @@ mavid <- function (seqfile, treefile = "treefile", outfile = "mavid.mfa", ...) {
 
 #' @importFrom parallel detectCores
 #' @importFrom parallel mclapply
-align_mercator_segments <- function (seg_dir, aligner = "fsa",
-                                     force = TRUE, mask = TRUE) {
+align_mercator_segments <- function (seg_dir, aligner = c("fsa", "mavid"),
+                                     force = TRUE, mask = TRUE, ...) {
   
   
   segments <- normalizePath(dir(seg_dir, "^\\d+$", full.names=TRUE))
   if (!force &&
-        all(vapply(file.path(segments, "mavid.mfa"), file.exists, logical(1)))) {
+      all(vapply(file.path(segments, "mavid.mfa"), file.exists, logical(1)))) {
     return(invisible(segments_dir))
   }
   
-  aligner <- match.arg(aligner, c("fsa"))
+  aligner <- match.arg(aligner, c("fsa", "mavid"))
   if (aligner == "fsa") {
-    aln.opts <- list(mercator="cons", exonerate=TRUE, softmasked=mask)
+    aln.opts <- list(mercator="cons", exonerate=TRUE, softmasked=mask, ...)
   } else {
-    aln.opts <- list(c="cons")
+    aln.opts <- list(c="cons", ...)
   }
   ALN <- match.fun(aligner)
   cwd <- getwd()
@@ -80,15 +80,4 @@ align_mercator_segments <- function (seg_dir, aligner = "fsa",
   
   return(invisible(segments_dir))
 }
-
-
-#' Sequence alignment with MAUVE
-#' 
-#' not implemented
-#'  
-#' @export
-mauve <- function () {
-  NULL
-}
-
 

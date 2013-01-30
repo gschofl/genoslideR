@@ -1,4 +1,19 @@
-mask_genomes <- function(fasta) {
+#' Softmask repeats and low-complexity regions using
+#' RepeatScout and RepeatMasker
+#' 
+#' \code{maskSequence} will create a hidden directory \sQuote{.masked}
+#' in the parent directory of the submitted fasta files and place all
+#' all intermediate files as well as the final softmasked sequence file
+#' into this directory.
+#' 
+#' If multiple fasta files share the same parent directory, the softmasked
+#' files are placed in individual subdirectories within \sQuote{.masked}.
+#' 
+#' @param fasta Path to fasta file(s).
+#' 
+#' @return Character vector. Path to softmasked file(s).
+#' @export
+maskSequence <- function(fasta) {
   
   ## check dependencies
   hasDependencies(c("awk", "build_lmer_table", "RepeatScout", "filter-stage-1.prl",
