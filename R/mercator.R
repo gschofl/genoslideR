@@ -24,10 +24,13 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # get sequence files
   seq_files <- normalizePath(seq_files)
   
-  # Make sure necessary external dependencies are available
-  hasDependencies(c("fa2sdb", "sdbList", "gffRemoveOverlaps", "gff2anchors",
-                    "anchors2fa", "blat", "blat2hits", "mercator",
-                    "sdbAssemble", "phits2constraints", "makeAlignmentInput",
+  ## Debendencies BLAT
+  hasDependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
+                    "anchors2fa", "blat", "blat2hits"))
+  
+  ## Debendencies mercator
+  hasDependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
+                    "makeAlignmentInput",
                     "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
                     "makeBreakpointAlignmentInput", "mavidAlignDirs",
                     "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
@@ -105,6 +108,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # identified by the orthology map.
   segment_dir <- run_mercator(wd)
   
+  message("Next use 'alignMercatorSegments()' to generate alignments for each of the orthologous segments produced by mercator")
   return(segment_dir)
 }
 
@@ -507,8 +511,6 @@ match_genes <- function(runs, merc) {
 #' 
 #' @export
 make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") {
-  
-  stopifnot(require(ape))
   fna <- dir(fna_dir, "\\.fa$", full.names=TRUE)
   alignment <- list()
   for (i in seq_along(fna)) {

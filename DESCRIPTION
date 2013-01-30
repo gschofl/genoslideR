@@ -17,24 +17,25 @@ Imports:
     IRanges,
     GenomicRanges,
     Biostrings,
+    ape,
     stringr,
     rmisc,
     biofiles,
     rentrez,
     parallel
 Collate:
-    'align-genomes.R'
     'aligner.R'
     'annotation.R'
     'gapped_ranges.R'
     'genoslideR.R'
-    'get_aln_range.R'
     'glimmer.R'
     'import-alignment.R'
     'import-annotation.R'
     'mask-genomes.R'
     'mercator.R'
     'reciprocal-blat.R'
-    'slice-alignment.R'
     'utils.R'
     'utility-functions.R'
+    'align-mercator-segments.R'
+    'get-aln-range.R'
+    'merge-mercator-segments.R'

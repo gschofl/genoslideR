@@ -1,10 +1,10 @@
-slice_alignment <- function (segment_dir, write = TRUE) {
+merge_mercator_segments <- function (seg_dir, write = TRUE) {
 
-  parent_dir <- normalizePath(strsplitN(segment_dir, "segments", 1))
-  segments <- dir(segment_dir, "^\\d+$", full.names=TRUE)
-  map <- read.table(file.path(segment_dir, "map"),
+  parent_dir <- normalizePath(strsplitN(seg_dir, "segments", 1))
+  segments <- dir(seg_dir, "^\\d+$", full.names=TRUE)
+  map <- read.table(file.path(seg_dir, "map"),
                     as.is=TRUE, sep="\t", row.names=1)
-  genomes <- scan(file.path(segment_dir, "genomes"), what="character",
+  genomes <- scan(file.path(seg_dir, "genomes"), what="character",
                   quiet=TRUE)
   
   # order segments

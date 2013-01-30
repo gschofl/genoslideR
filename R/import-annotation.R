@@ -165,8 +165,7 @@ import_annotation_from_ftb <- function(file) {
 }
 
 
-import_annotation_from_gff <- function(file = "data/NC_002179.gff",
-                                       features = c("CDS", "RNA")) {
+import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA")) {
   
   l <- readLines(file)
   nlines <- -1L
@@ -200,14 +199,10 @@ import_annotation_from_gff <- function(file = "data/NC_002179.gff",
                           attributes = character()))
   
   f_idx <- grep(paste0(features, collapse="|"), gff[["type"]], ignore.case=TRUE)
-  
   ranges <- IRanges(gff[["start"]], gff[["end"]])
   ovl <- as(findOverlaps(ranges[f_idx,], IntervalTree(ranges), type="equal"),
             "data.frame")
   p_idx <- tapply(ovl[[2]], as.factor(ovl[[1]]), "[", 1)
-  
-  r_idx <- which(gff[["type"]] == 'region')
-  id <- strip_ext(gff[['seqid']][r_idx])
   
   if (length(f_idx) != length(p_idx))
     stop("Probably malformed gff")
@@ -217,14 +212,32 @@ import_annotation_from_gff <- function(file = "data/NC_002179.gff",
   type <- gff[["type"]][f_idx]
   strand <- vapply(gff[["strand"]][f_idx], switch, '+'=1L, '-'=-1L, NA_integer_,
                    FUN.VALUE=integer(1), USE.NAMES=FALSE)
-  
   attr <- parse_attr(gff$attributes)
-
+  
+  
+  ## misc_features have type region in gff; for the Seqinfo we want only the
+  ## gff region with the GenBank key Source
+  src_idx <- which(vapply(attr, "[", "gbkey", FUN.VALUE=character(1)) == "Src")
+  if (length(src_idx) > 1) {
+    warning("More then 1 'Source' field in ", basename(file))
+    src_idx <- src_idx[1]
+  } else if (length(src_idx) < 1) {
+    warning("No 'Source' field in ", basename(file))
+  }
+  id <- strip_ext(gff[['seqid']][src_idx]) %||% NA_character_
+  isCircular <- unlist(attr[src_idx])["Is_circular"] == "true" %||% NA
+  seqinfo <- tryCatch({
+    x <- docsum(esummary(esearch(id, "nuccore")))
+    Seqinfo(seqnames = unlist(x["Caption"], use.names=FALSE),
+            seqlengths = as.numeric(unlist(x["Length"], use.names=FALSE)),
+            isCircular = unname(isCircular),
+            genome = unlist(x["Title"], use.names=FALSE))
+  }, error = function (e) {
+    Seqinfo(seqnames=id)
+  })
+  
   f_attr <- attr[f_idx]
   p_attr <- attr[p_idx]
-  r_attr <- attr[r_idx]
-  description <- paste(unlist(r_attr)[c("old-name", "Dbxref")], collapse="; ")
-  
   product <- vapply(f_attr, "[", "product", FUN.VALUE=character(1))
   proteinID <- vapply(f_attr, "[", "protein_id", FUN.VALUE=character(1))
   geneID <- vapply(f_attr, "[", "Dbxref", FUN.VALUE=character(1))
@@ -236,10 +249,11 @@ import_annotation_from_gff <- function(file = "data/NC_002179.gff",
   synonym <- vapply(p_attr, "[", "locus_tag", FUN.VALUE=character(1))
   gene <- vapply(p_attr, "[", "gene", FUN.VALUE=character(1))
  
-  a <- RangedData(IRanges(start = start, width = width),
-             names, strand, gene, synonym, geneID, proteinID,
-             type, product, space = id, universe = description)
-  a
+  gr <- GRanges(seqnames=Rle(id),
+                ranges=IRanges(start = start, width = width, names = names),
+                strand=Rle(strand), type, gene, synonym,
+                geneID, proteinID, product, seqinfo = seqinfo) 
+  gr
 }
 
 

@@ -2,7 +2,7 @@
 importAlignment <- function (aln) {
   
   if (is_segments_dir(aln)) {
-    seq <- slice_alignment(segments_dir(aln))
+    seq <- merge_mercator_segments(segments_dir(aln))
     aln <- metadata(seq)[["path"]]
   } else {
     seq <- readDNAStringSet(aln)

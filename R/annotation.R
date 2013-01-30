@@ -17,9 +17,9 @@ annotationList <- function(files = anno, type = "genbank", ...) {
   
   if (type == "gff") {
     anno <- GRangesList(lapply(files, import_annotation_from_gff))
-    names(anno) <- unlist(lapply(anno, function (a) levels(space(a))))
+    names(anno) <- seqnames(seqinfo(anno))
   }
-  
+
   if (type == "ptt") {
     if (is.null(id <- list(...)[["id"]])) {
       anno <- GRangesList(lapply(files, import_annotation_from_ptt))
