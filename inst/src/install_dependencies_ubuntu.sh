@@ -168,15 +168,15 @@ function install_fsa () {
     _with_mercator=${_with_mercator:-y}
 
     ## dependencies mummer, exonerate and mercator
-    if [ ! which mummer 2>&1 >/dev/null && "$_with_mummer" = "y" ]; then
+    if ! command -v mummer >/dev/null 2>&1 && [ "$_with_mummer" = "y" ]; then
         sudo apt-get --yes install mummer
     fi
 
-    if [ ! which exonerate 2>&1 >/dev/null && "$_with_exonerate" = "y" ]; then
+    if ! command -v exonerate >/dev/null 2>&1 && [ "$_with_exonerate" = "y" ]; then
         sudo apt-get --yes install exonerate
     fi
 
-    if [ ! which mercator 2>&1 >/dev/null && "$_with_mercator" = "y" ]; then
+    if ! command -v mercator >/dev/null 2>&1 && [ "$_with_mercator" = "y" ]; then
         install_mercator
     fi
 
@@ -199,10 +199,11 @@ function install_fsa () {
         *) _exonerate= ;;
     esac
 
-    ./configure --prefix=${_bindir%/bin} \
-                $_mummer \
-                $_exonerate \
-                --disable-gui 2>&1 |tee $_fsadir/fsa-config.log
+   CC="gcc-4.6" CXX="g++-4.6" ./configure \
+                            --prefix=${_bindir%/bin} \
+                            $_mummer \
+                            $_exonerate \
+                            --disable-gui 2>&1 |tee $_fsadir/fsa-config.log
 
     ## we have to supply -XDignore.symbol.file to javac to compile the gui
     for makefile in ./display/Makefile.*; do
