@@ -4,7 +4,9 @@
 that can be aligned using FSA}
 \usage{
   mercator(seq_files, anno_files = NULL,
-    anno_type = "glimmer3", wd = NULL, mask = TRUE)
+    anno_type = "glimmer3",
+    glimmeropts = list(o = 50, g = 110, t = 30),
+    mask = TRUE, wd = NULL)
 }
 \arguments{
   \item{seq_files}{Path to sequence files ('fasta' or
@@ -17,11 +19,15 @@ that can be aligned using FSA}
   \item{anno_type}{Type of annotation ('glimmer3',
   'genbank', 'gff', 'ptt', or 'ftable').}
 
-  \item{wd}{Working directory. Defaults to the parent
-  directory of the provided sequence files.}
+  \item{glimmeropts}{Options passed to
+  \code{\link{glimmer3}} if an \emph{ab initio} annotation
+  is performed.}
 
   \item{mask}{Softmask sequence before aligning using
   \code{\link{maskSequence}}.}
+
+  \item{wd}{Working directory. Defaults to the parent
+  directory of the provided sequence files.}
 }
 \description{
   Run mercator to build a homology map and create

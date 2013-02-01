@@ -2,12 +2,11 @@
 \alias{glimmer3}
 \title{Ab initio genome annotation using glimmer3}
 \usage{
-  glimmer3(genome = seq_files[1],
-    opts = list(o = 50, g = 110, t = 30), ...,
-    cleanup = TRUE)
+  glimmer3(fasta, opts = list(o = 50, g = 110, t = 30),
+    ..., cleanup = TRUE)
 }
 \arguments{
-  \item{genome}{Path to a genome file in fasta format}
+  \item{fasta}{Path to a genome file(s) in fasta format}
 
   \item{opts}{a named list of options for glimmer3}
 
@@ -15,6 +14,9 @@
   glimmer3}
 
   \item{cleanup}{Clean up intermediate files.}
+}
+\value{
+  Character vector. Path to glimmer3 file(s).
 }
 \description{
   Ab initio genome annotation using glimmer3

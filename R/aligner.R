@@ -2,10 +2,11 @@
 #' 
 #' @param seqfile Sequence files in fasta format.
 #' @param outfile Multifasta alignment file.
-#' @param ... Additional arguments to fsa
+#' @param opts a named list of options for fsa.
+#' @param ... Named values interpreted as options for fsa.
 #' 
 #' @export
-fsa <- function (seqfile, outfile = "fsa.mfa", ...) {
+fsa <- function (seqfile, outfile = "fsa.mfa", opts = list(), ...) {
   
   if (missing(seqfile)) {
     system("fsa --help")
@@ -18,43 +19,15 @@ fsa <- function (seqfile, outfile = "fsa.mfa", ...) {
   if (length(seqfile) > 1)
     infiles <- paste(infiles, collapse=" ")
   
-  SysCall("fsa", ..., stdin = seqfile, stdout = outfile, redirection = FALSE,
-          style = "gnu")
-}
-
-#' Sequence alignment with mavid
-#' 
-#' @param seqfile Sequence files in multifasta format.
-#' @param treefile Phylogenetic tree file in Newick format.
-#' @param outfile Multifasta alignment file.
-#' @param ... Additional arguments to mavid
-#' 
-#' @export
-mavid <- function (seqfile, treefile = "treefile", outfile = "mavid.mfa", ...) {
-  
-  if (missing(seqfile)) {
-    system("mavid -h")
-    return(invisible(NULL))
-  }
-  
-  if (!file.exists(seqfile)) {
-    stop("Can not open input file")
-  }
-  
-  if (!file.exists(treefile)) {
-    stop("Can not open tree file")
-  }
-  
-  SysCall("mavid", ..., stdin = paste(treefile, seqfile), stdout = outfile,
-          redirection = FALSE, style = "unix")
+  args <- merge_list(opts, list(...))
+  SysCall("fsa", args = args, stdin = seqfile, stdout = outfile,
+          redirection = FALSE, style = "gnu")
 }
 
 
 #' @importFrom parallel detectCores
 #' @importFrom parallel mclapply
-align_mercator_segments <- function (seg_dir, aligner = c("fsa", "mavid"),
-                                     force = TRUE, mask = TRUE, ...) {
-  
+align_mercator_segments <- function (seg_dir, force, opts = list()) {
   
   segments <- normalizePath(dir(seg_dir, "^\\d+$", full.names=TRUE))
   if (!force &&
@@ -62,18 +35,12 @@ align_mercator_segments <- function (seg_dir, aligner = c("fsa", "mavid"),
     return(invisible(segments_dir))
   }
   
-  aligner <- match.arg(aligner, c("fsa", "mavid"))
-  if (aligner == "fsa") {
-    aln.opts <- list(mercator="cons", exonerate=TRUE, softmasked=mask, ...)
-  } else {
-    aln.opts <- list(c="cons", ...)
-  }
-  ALN <- match.fun(aligner)
+  aln.opts <- merge_list(list(mercator="cons"), opts)
   cwd <- getwd()
   ncores <- detectCores() - 1
   mclapply(segments, function (seg) {
     setwd(seg)
-    ALN(seqfile="seqs.fasta", outfile="mavid.mfa", args=aln.opts)
+    fsa(seqfile="seqs.fasta", outfile="mavid.mfa", args=aln.opts)
     setwd(cwd)
   }, mc.cores=ncores)
   setwd(cwd)

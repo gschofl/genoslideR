@@ -24,27 +24,19 @@
 #' using \code{\link{glimmer3}} is performed.
 #' @param anno_type Type of annotation ('glimmer3', 'genbank', 'gff', 
 #' 'ptt', or 'ftable').
-#' @param wd Working directory. Defaults to the parent directory of
-#' the provided sequence files.
+#' @param glimmeropts Options passed to \code{\link{glimmer3}} if an
+#' \emph{ab initio} annotation is performed.
 #' @param mask Softmask sequence before aligning using
 #' \code{\link{maskSequence}}.
+#' @param wd Working directory. Defaults to the parent directory of
+#' the provided sequence files.
 #' 
 #' @export
 mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
-                      wd = NULL, mask = TRUE) {
+                      glimmeropts = list(o=50, g=110, t=30), 
+                      mask = TRUE, wd = NULL) {
   
   annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
-  
-  # if not specified the working directory is the parent directory of all
-  # sequence files
-  if (is.null(wd)) {
-    wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
-                 strsplit(dirname(seq_files), .Platform$file.sep))
-    wd <- normalizePath(paste(wd, collapse=.Platform$file.sep))
-  }
-  
-  # get sequence files
-  seq_files <- normalizePath(seq_files)
   
   ## Debendencies BLAT
   hasDependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
@@ -56,14 +48,29 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
                     "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
                     "makeBreakpointAlignmentInput", "mavidAlignDirs",
                     "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
-
+  
+  # if not specified the working directory is the parent directory of all
+  # sequence files
+  if (is.null(wd)) {
+    wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
+                 strsplit(dirname(seq_files), .Platform$file.sep))
+    wd <- normalizePath(paste(wd, collapse=.Platform$file.sep))
+  }
+  
+  # mask sequence files
+  if (mask) {
+    seq_files <- maskSequence(normalizePath(seq_files))
+  }
+  seq_files <- normalizePath(seq_files)
+  
+  
+  # generate annotation if necessary
   if (is.null(anno_files)) {
     if (annotation != "glimmer3")
       stop("No annotation files provided")
     else
-      anno_files <- vapply(seq_files, glimmer3, character(1))
+      anno_files <- glimmer3(normalizePath(seq_files))
   }
-  
   anno_files <- normalizePath(anno_files)
 
   if (length(anno_files) != length(seq_files))
@@ -72,31 +79,14 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   if (any(strip_ext(basename(anno_files)) %ni% strip_ext(basename(seq_files))))
     stop("Names of annotation and sequence files must match.")
   
-  # set up the file structure for mercator input and output
-  if (mask) {
-    mask_dir <- file.path(wd, ".masked")
-    if (file.exists(mask_dir)) {
-      warning("A '.masked' directory exists in ", wd, immediate.=TRUE)
-      ans <- readline("Overwrite [y/n]? ")
-      if (ans == "y") {
-        unlink(mask_dir, recursive=TRUE)
-      } else {
-        return(NULL)
-      }
-    }
-    dir.create(mask_dir)
-  }
-  
   merc <- file.path(wd, ".mercator")
   if (file.exists(merc)) {
-    if (file.exists(mask_dir)) {
-      warning("A '.mercator' directory exists in ", wd, immediate.=TRUE)
-      ans <- readline("Overwrite [y/n]? ")
-      if (ans == "y") {
-        unlink(merc, recursive=TRUE)
-      } else {
-        return(NULL)
-      }
+    warning("A '.mercator' directory exists in ", wd, immediate.=TRUE)
+    ans <- readline("Overwrite [y/n]? ")
+    if (ans == "y") {
+      unlink(merc, recursive=TRUE)
+    } else {
+      return(NULL)
     }
   }
   
@@ -108,11 +98,11 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
     dir.create(dir, recursive=TRUE)
   
   # generate mercator-readable gff files
-  gff_files <- gff_for_mercator(anno_files, annotation, wd)
+  gff_files <- gff_for_mercator(f=anno_files, type=annotation, wd)
   
   # generate mercator-readable fasta files and mask repeats
   # if mask = TRUE
-  fna_files <- fna_for_mercator(f=seq_files, wd, mask)
+  fna_files <- fna_for_mercator(f=seq_files, wd)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
   invisible(mapply(function(x, y)
@@ -130,7 +120,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # identified by the orthology map.
   segment_dir <- run_mercator(wd)
   
-  message("Next use 'alignMercatorSegments()' to generate alignments for each of the orthologous segments produced by mercator")
+  message("Next use 'alignSegments()' to generate alignments for each of the orthologous segments produced by mercator")
   return(segment_dir)
 }
 
@@ -347,7 +337,7 @@ glimmer2gff <- function (f, wd) {
 }
 
 
-fna_for_mercator <- function (f, wd, mask = TRUE) {
+fna_for_mercator <- function (f, wd) {
   
   if (missing(wd)) {
     stop("No working directory provided")
@@ -363,23 +353,18 @@ fna_for_mercator <- function (f, wd, mask = TRUE) {
 
   if (!file.exists(file.path(wd, ".mercator")))
     stop("No '.mercator' directory available in ", wd)
-  
-  if (mask && !file.exists(file.path(wd, ".masked")))
-    stop("No '.masked' directory available in ", wd)
 
   out <- switch(type,
-                fna=fna2fna(f, wd, mask = mask),
-                gbk=gbk2fna(f, wd, mask = mask),
+                fna=fna2fna(f, wd),
+                gbk=gbk2fna(f, wd),
                 other=stop("Sequence files must be either in FASTA or GBK format"))
   
   return(invisible(out))
 }
 
 
-fna2fna <- function (f, wd, mask = TRUE) {
+fna2fna <- function (f, wd) {
   outfiles <- character()
-  if (mask)
-    f <- maskSequence(f)
   for (file in f) {
     # replace first line in fasta
     fna <- readLines(file)
@@ -393,11 +378,9 @@ fna2fna <- function (f, wd, mask = TRUE) {
 }
 
 
-gbk2fna <- function (f, wd, mask = TRUE) {
+gbk2fna <- function (f, wd) {
   stop("Extraction of sequences from GBK files isn't implemented yet")
   outfiles <- character()
-  if (mask)
-    f <- maskSequence(f)
   for (file in f) {
     outfiles <- c(outfiles, outfile)
   }

@@ -1,16 +1,18 @@
-#' Align orthologous genome segments produced by \code{mercator} 
+#' Align orthologous genome segments with \code{fsa} 
 #' 
 #' @param seg_dir Path to mercator segments.
-#' @param aligner Which alignment program to use; 'fsa' or 'mavid'.
-#' @param force Realign existing alignments.
-#' @param mask set \code{TRUE} if input sequences are softmasked.
-#' @param ... Aligner options
+#' @param force Realign an existing alignment.
+#' @param opts a named list of options for \code{\link{fsa}}. The default
+#' options are optimizes for long sequences.
+#' @param ... Named values interpreted as options for fsa.
 #' 
 #' @export
-alignMercatorSegments <- function (seg_dir, aligner = "fsa",
-                                   force = FALSE, mask = TRUE, ...) {
-  
-  aligner <- match.arg(aligner, c("fsa", "mavid"))
+alignSegments <- function (seg_dir, force = FALSE,
+                           opts = list(anchored = TRUE,
+                                       translated = TRUE,
+                                       exonerate = TRUE,
+                                       softmasked = TRUE),
+                           ...) {
   
   if (is_segments_dir(seg_dir)) {
     seg_dir <- segments_dir(seg_dir)
@@ -18,7 +20,8 @@ alignMercatorSegments <- function (seg_dir, aligner = "fsa",
     stop("No valid path to mercator segments")
   }
   
-  seg_dir <- align_mercator_segments(seg_dir, aligner, force, mask, ...)
+  opts <- merge_list(opts, list(...))
+  seg_dir <- align_mercator_segments(seg_dir, force, opts)
 
   message("Pass the path to the aligned mercator segments to the 'annotatedAlignment()' constructor to create an 'annotatedAlignment' object")
   return(seg_dir)
