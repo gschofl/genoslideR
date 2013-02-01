@@ -1,20 +1,32 @@
-#' Import aligned mercator segments or a multifasta alignment
+#' Import a genome alignment
 #' 
-#' @param alnPath Path to mercator segments or a multifasta segment
-#' @param writeToMFA if \code{TRUE} merge mercator segments into a
-#' single multi fasta file and write to file "aln.mfa"  
+#' @param aln Path to a directory containing mercator segments,
+#' a single file in mfa (mult-fasta) or maf (multiple alignment file)
+#' format containing the genome aligment.
 #'
+#' @details
+#' If the alignment is provided as a multi fasta file the each header
+#' must contain a map of the orthologous segments in the following 
+#' format: 
+#'  
+#' GenomeID ChromosomeID:start:end:strand ... ChromosomeID:start:end:strand
+#'
+#' where strand is encodes as + or -
+#'  
+#' @return A \code{\linkS4class[Biostrings]{DNAStringSet}} instance.
 #' @export
-importAlignment <- function (alnPath, writeToMFA = TRUE) {
+importAlignment <- function (aln) {
   
-  if (is_segments_dir(alnPath)) {
-    seq <- merge_mercator_segments(segments_dir(alnPath), write=writeToMFA)
-    alnPath <- metadata(seq)[["path"]]
-  } else {
-    seq <- readDNAStringSet(alnPath)
+  if (is_segments_dir(aln)) {
+    seq <- merge_mercator_segments(seg_dir=segments_dir(aln))
+    aln <- normalizePath(metadata(seq)[["path"]])
+  } else if (is_maf(aln)) {
+    seq <- readMAF(aln)
+  } else if (is_mfa(aln)) {
+    seq <- readDNAStringSet(aln)
   }
   
-  map <- header2map(names(seq), alnPath)
+  map <- header2map(names(seq), aln)
   names(seq) <- names(map[["map"]])
   metadata(seq) <- map
   seq
@@ -60,6 +72,19 @@ update_position <- function (m, w, r) {
 #   }))
   
   cbind(m, mat)
+}
+
+
+readMAF <- function (maf = "~/local/workspace/Chlamydia/pomago.maf") {
+  tempfile <- tempfile()
+  on.exit(unlink(tempfile))
+  # exec <- system.file("src", "maf2mfa.pl", package="genoslideR")
+  exec <- "~/R/Projects/Devel/genoslideR/inst/src/maf2mfa.pl"
+  res <- pipe(paste(exec, maf))
+  write(scan(res, sep="\n", quiet=TRUE, what=character()),
+        file = tempfile)
+  close(res)
+  readDNAStringSet(tempfile)        
 }
 
 

@@ -32,10 +32,12 @@ is_segments_dir <- function (dir) {
   if (length(dir) > 1 || !file.exists(dir) || !file.info(dir)$isdir)
     return(FALSE)
   
-  if (split_path(dir) == "segments" && all(grepl("genomes|map|\\d+", dir(dir))))
+  if (split_path(dir) == "segments" && 
+        all(grepl("genomes|map|\\d+|fsa\\.mfa", dir(dir))))
     return(TRUE)
   
-  if (file.exists(file.path(dir, "segments")) && all(grepl("genomes|map|\\d+", dir(file.path(dir, "segments")))))
+  if (file.exists(file.path(dir, "segments")) && 
+        all(grepl("genomes|map|\\d+|fsa.mfa", dir(file.path(dir, "segments")))))
     return(TRUE)
   
   else 

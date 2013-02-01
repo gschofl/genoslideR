@@ -1,4 +1,4 @@
-merge_mercator_segments <- function (seg_dir, write = TRUE) {
+merge_mercator_segments <- function (seg_dir) {
 
   parent_dir <- normalizePath(strsplitN(seg_dir, "segments", 1))
   segments <- dir(seg_dir, "^\\d+$", full.names=TRUE)
@@ -13,15 +13,11 @@ merge_mercator_segments <- function (seg_dir, write = TRUE) {
   # parse map into fasta headers
   headers <- map2header(map, genomes)
   
-  # merge segments into one multifasta
+  # merge segments into one multi fasta file
   merged_aln <- merge_segments(segments, headers)
-  
-  if (write) {
-    out <- file.path(parent_dir, "aln.mfa")
-    writeXStringSet(merged_aln, filepath=out, format="fasta")
-    metadata(merged_aln) <- list(path=out)
-  }
-
+  mfa_path <- file.path(seg_dir, "fsa.mfa")
+  metadata(merged_aln) <- list(path=mfa_path)
+  writeXStringSet(merged_aln, filepath=mfa_path)
   return(invisible(merged_aln))
 }
 

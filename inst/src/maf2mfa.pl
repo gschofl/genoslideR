@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 
-# Title: rnazpaser.pl
+# Title: maf2mfa.pl
 # Author: Jochen Bick
 
 use strict;
@@ -9,7 +9,6 @@ use Data::Dumper;
 my $seq = $ARGV[0];
 my $maln_seq = "";
 
-
 my $allfile = readall($seq);
 my @sequence = split(/\n\n/, $allfile);
 my @seq_names = findgenomes($allfile);
@@ -17,8 +16,6 @@ my @seq_names = findgenomes($allfile);
 #print Dumper(@sequence);
 my %hash = hashfiller(@seq_names);
 my $count = 1;
-
-
 
 foreach my $aln_frag ( @sequence ){
     my @elements = split(/\ns /, $aln_frag);

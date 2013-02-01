@@ -67,6 +67,20 @@ is_gbk <- function(f) {
   grepl("^LOCUS", l[1]) && grepl("^DEFINITION", l[2])
 }
 
+is_mfa <- function (f) {
+  l <- readLines(f, 1)
+  grepl("^>[[:graph:]]+ [[:graph:]]+:\\d+:\\d+:[+-]{1}", l)
+}
+
+is_maf <- function (f) {
+  i <- 1
+  while (grepl("^#", readLines(f, i))) {
+    i <- i + 1
+  }
+  l <- readLines(f, i + 1)
+  grepl("^a", l[i]) && grepl("^s ", l[i+1])
+}
+
 hasDependencies <- function(cmd) {
   lcmd <- hasCommand(cmd)
   if (any(!lcmd)) {
