@@ -180,6 +180,14 @@ function install_fsa () {
         install_mercator
     fi
 
+    if ! command -v gcc-4.6 >/dev/null 2>&1;  then
+        sudo apt-get -yes install gcc-4.6
+    fi
+
+    if ! command -v g++-4.6 >/dev/null 2>&1;  then
+        sudo apt-get -yes install g++-4.6
+    fi
+
     ## get the source
     cd $_srcdir
     if [ ! -e "$_fsa"  ]; then
