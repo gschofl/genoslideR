@@ -3,7 +3,7 @@
 \title{Softmask repeats and low-complexity regions using
 RepeatScout and RepeatMasker}
 \usage{
-  maskSequence(fasta)
+  maskSequence(fasta = f)
 }
 \arguments{
   \item{fasta}{Path to fasta file(s).}

@@ -20,7 +20,7 @@ glimmer3 <- function (genome = seq_files[1],
     unlink(glimmer_dir, recursive=TRUE)
   dir.create(glimmer_dir)
   
-  opts <- merge_list(opts, list(h=TRUE))
+  opts <- merge_list(opts, list(...))
   
   orfs <- longorfs(genome, glimmer_dir)
   train <- extract(genome, orfs)

@@ -69,7 +69,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   if (length(anno_files) != length(seq_files))
     stop("Unequal number of sequence and annotation files")
   
-  if (any(strip_ext(basename(anno_files))%ni%(strip_ext(basename(seq_files)))))
+  if (any(strip_ext(basename(anno_files)) %ni% strip_ext(basename(seq_files))))
     stop("Names of annotation and sequence files must match.")
   
   # set up the file structure for mercator input and output
@@ -112,7 +112,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   
   # generate mercator-readable fasta files and mask repeats
   # if mask = TRUE
-  fna_files <- fna_for_mercator(seq_files, wd, mask)
+  fna_files <- fna_for_mercator(f=seq_files, wd, mask)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
   invisible(mapply(function(x, y)
