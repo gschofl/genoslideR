@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 
-# Title: rnazpaser.pl
+# Title: maf2mfa.pl
 # Author: Jochen Bick
 
 use strict;
