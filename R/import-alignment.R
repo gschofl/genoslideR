@@ -22,11 +22,13 @@ importAlignment <- function (aln) {
     aln <- normalizePath(metadata(seq)[["path"]])
   } else if (is_maf(aln)) {
     seq <- readMAF(aln)
+    aln <- normalizePath(metadata(seq)[["path"]])
+    on.exit(unlink(aln))
   } else if (is_mfa(aln)) {
     seq <- readDNAStringSet(aln)
   }
   
-  map <- header2map(names(seq), aln)
+  map <- header2map(headers=names(seq), aln_path=aln)
   names(seq) <- names(map[["map"]])
   metadata(seq) <- map
   seq
@@ -77,20 +79,21 @@ update_position <- function (m, w, r) {
 
 readMAF <- function (maf = "~/local/workspace/Chlamydia/pomago.maf") {
   tempfile <- tempfile()
-  on.exit(unlink(tempfile))
   # exec <- system.file("src", "maf2mfa.pl", package="genoslideR")
   exec <- "~/R/Projects/Devel/genoslideR/inst/src/maf2mfa.pl"
   res <- pipe(paste(exec, maf))
   write(scan(res, sep="\n", quiet=TRUE, what=character()),
         file = tempfile)
   close(res)
-  readDNAStringSet(tempfile)        
+  seq <- readDNAStringSet(tempfile)
+  metadata(seq) <- list(path=tempfile)
+  seq
 }
 
 
 get_alignment_gaps <- function (aln_path, genomes) {
   exec <- system.file("src", "runlvec.pl", package="genoslideR")
-  #exec <- "./src/runlvec.pl"
+  #exec <- "~/R/Projects/Devel/genoslideR/inst/src/runlvec.pl"
   gap_ranges <- list()
   for (i in seq_along(genomes)) {
     pipe_desc <- pipe(paste(exec, aln_path, i))
