@@ -13,9 +13,11 @@ my $allfile = readall($seq);
 my @sequence = split(/\n\n/, $allfile);
 my @seq_names = findgenomes($allfile);
 
-#print Dumper(@sequence);
+
 my %hash = hashfiller(@seq_names);
 my $count = 1;
+
+#print Dumper(%hash);
 
 foreach my $aln_frag ( @sequence ){
     my @elements = split(/\ns /, $aln_frag);
@@ -35,6 +37,8 @@ foreach my $aln_frag ( @sequence ){
 	push(@{$hash{$genome}}, $alignment);
 	#print $k."\n";
     }
+    #print Dumper(%hash);
+    #exit;
     foreach my $ele (keys %hash){
 	#my $nums = @{$hash{$ele}};
 	if($hash{$ele}){
@@ -84,7 +88,7 @@ sub findgenomes{
     my $file = $_[0];
     my @returnarr;
     $file =~ s/a .*\n//g;
-    $file =~ s/s .*([\w\d\.]*).+\n*/$1,/g;
+    $file =~ s/s .*\|([\w\d\.]*)\|.+\n*/$1,/g;
     @returnarr = split(/,/, $file);
     @returnarr = keys %{{ map { $_ => 1 } @returnarr }}; # unique array
     return @returnarr;
