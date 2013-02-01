@@ -72,7 +72,8 @@ hasDependencies <- function(cmd) {
   if (any(!lcmd)) {
     stop("The following external program(s) must be installed: ", 
          paste(cmd[!lcmd], collapse=", "),
-         "\n\nTry running 'install_genoslider_dependencies()''")
+         "\n\nTry running 'install_genoslider_dependencies()''",
+         call. = FALSE)
   }
   invisible()
 }

@@ -112,8 +112,8 @@ function install_mercator () {
 
     INSTALL_DIR=$(pwd)
     _cndsrc_url=http://www.biostat.wisc.edu/~cdewey/software
-    _cndsrc=cndsrc-2010.10.11.tar.gz
-    _cnddir=$_srcdir/cndsrc-2010.10.11
+    _cndsrc=cndsrc-2013.01.11.tar.gz
+    _cnddir=$_srcdir/cndsrc-2013.01.11
 
     cd $_srcdir
     wget -nc $_cndsrc_url/$_cndsrc
@@ -128,14 +128,6 @@ function install_mercator () {
         echo ""
         sleep 2
         install_blat
-    fi
-
-    ## test version of g++; 4.7 does currently not compile
-    _gpp_version=$(g++ --version | awk -F ' +' '/g\+\+/ {print $(NF)}' | awk -F.  '{print $1 "." $2}')
-    if [ "$_gpp_version" != 4.6 ]; then
-        printf "g++ is version %s\n" $_gpp_version
-        echo "g++ version 4.6 required for mercator to compile"
-        exit 1
     fi
 
     make 2>&1 |tee $_cnddir/mercator-make.log
@@ -176,16 +168,24 @@ function install_fsa () {
     _with_mercator=${_with_mercator:-y}
 
     ## dependencies mummer, exonerate and mercator
-    if [ ! which mummer 2>&1 >/dev/null && "$_with_mummer" = "y" ]; then
+    if ! command -v mummer >/dev/null 2>&1 && [ "$_with_mummer" = "y" ]; then
         sudo apt-get --yes install mummer
     fi
 
-    if [ ! which exonerate 2>&1 >/dev/null && "$_with_exonerate" = "y" ]; then
+    if ! command -v exonerate >/dev/null 2>&1 && [ "$_with_exonerate" = "y" ]; then
         sudo apt-get --yes install exonerate
     fi
 
-    if [ ! which mercator 2>&1 >/dev/null && "$_with_mercator" = "y" ]; then
+    if ! command -v mercator >/dev/null 2>&1 && [ "$_with_mercator" = "y" ]; then
         install_mercator
+    fi
+
+    if ! command -v gcc-4.6 >/dev/null 2>&1;  then
+        sudo apt-get -yes install gcc-4.6
+    fi
+
+    if ! command -v g++-4.6 >/dev/null 2>&1;  then
+        sudo apt-get -yes install g++-4.6
     fi
 
     ## get the source
@@ -207,10 +207,11 @@ function install_fsa () {
         *) _exonerate= ;;
     esac
 
-    ./configure --prefix=${_bindir%/bin} \
-                $_mummer \
-                $_exonerate \
-                --disable-gui 2>&1 |tee $_fsadir/fsa-config.log
+   CC="gcc-4.6" CXX="g++-4.6" ./configure \
+                            --prefix=${_bindir%/bin} \
+                            $_mummer \
+                            $_exonerate \
+                            --disable-gui 2>&1 |tee $_fsadir/fsa-config.log
 
     ## we have to supply -XDignore.symbol.file to javac to compile the gui
     for makefile in ./display/Makefile.*; do

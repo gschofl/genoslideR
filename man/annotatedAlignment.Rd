@@ -1,6 +1,5 @@
 \name{annotatedAlignment}
 \alias{annotatedAlignment}
-\alias{annotatedAlignment-class}
 \title{annotatedAlignment}
 \usage{
   annotatedAlignment(aln, anno, type, ...)
