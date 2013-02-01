@@ -196,12 +196,13 @@ setClass("annotatedAlignment",
 #' @export
 annotatedAlignment <- function (aln, anno, type, ...) {
   
-  if (missing(aln) || !file.exists(aln) || !is_mapped_alignment(aln)) {
-    stop("No path to alignment provided")
+  
+  if (missing(aln)) {
+    stop("No alignment provided")
   }
 
   if (missing(anno)) {
-    stop("No path to alignment file provided")
+    stop("No annotation provided")
   }
   
   if (missing(type)) {

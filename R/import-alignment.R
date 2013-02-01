@@ -17,6 +17,10 @@
 #' @export
 importAlignment <- function (aln) {
   
+  if (!file.exists(aln)) {
+    stop("No alignment file provided")
+  }
+  
   if (is_segments_dir(aln)) {
     seq <- merge_mercator_segments(seg_dir=segments_dir(aln))
     aln <- normalizePath(metadata(seq)[["path"]])
@@ -26,6 +30,8 @@ importAlignment <- function (aln) {
     on.exit(unlink(aln))
   } else if (is_mfa(aln)) {
     seq <- readDNAStringSet(aln)
+  } else {
+    stop("No valid alignment file provided")
   }
   
   map <- header2map(headers=names(seq), aln_path=aln)
