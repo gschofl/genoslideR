@@ -15,7 +15,7 @@ my @seq_names = findgenomes($allfile);
 
 
 my %hash = hashfiller(@seq_names);
-my $count = 1;
+my $count = 2;
 
 #print Dumper(%hash);
 
@@ -37,13 +37,13 @@ foreach my $aln_frag ( @sequence ){
 	push(@{$hash{$genome}}, $alignment);
 	#print $k."\n";
     }
-    #print Dumper(%hash);
-    #exit;
+    my $size;
     foreach my $ele (keys %hash){
 	#my $nums = @{$hash{$ele}};
 	if($hash{$ele}){
 	    my $a = $hash{$ele};
-	    my $size = @$a;
+	    $size = @$a;
+	   # print "before size ".$size." and count ".$count."\n";
 	    if($size =~ /$count/){
 		#print $hash{$ele};
 	    }else{
@@ -56,6 +56,7 @@ foreach my $aln_frag ( @sequence ){
 	    push(@{$hash{$ele}}, ",".$gaps);
 	}
     }
+    #print "after".$size."\n";
     $count++;
 }
 #print Dumper(%hash);
@@ -78,6 +79,8 @@ sub printhash{
 	}
 	my $printheader = join(" ", @header)."\n";
 	$printheader =~ s/  +/ /g;
+	$printheader =~ s/\.\d//g;
+	$ele =~ s/\.\d//;
 	print ">$ele ".$printheader;
 	print join("", @aln)."\n";
     } 
