@@ -56,6 +56,11 @@ capitalize <- function(x) {
   x
 }
 
+is_mapped_alignment <- function (aln) {
+  is(aln, "DNAStringSet") &&
+    all(c("map", "gaps") %in% names(metadata(aln)))
+}
+
 is_fasta <- function(f) {
   l <- readLines(f, n=2)
   grepl("^>", l[1]) && 

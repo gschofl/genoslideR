@@ -186,8 +186,9 @@ setClass("annotatedAlignment",
 
 #' Construct an annotated alignment
 #' 
-#' @param aln Path to a multifasta alignment file or a mercator directory
-#' containing aligned orthologous segments.
+#' @param aln Path to a directory containing mercator segments,
+#' a single file in mfa (multi fasta) or maf (multiple alignment file)
+#' format containing the genome aligment.
 #' @param anno Paths to annotation files.
 #' @param type Type of annotation files.
 #' @param ... seqid (accession numbers)
@@ -195,8 +196,8 @@ setClass("annotatedAlignment",
 #' @export
 annotatedAlignment <- function (aln, anno, type, ...) {
   
-  if (missing(aln) || !file.exists(aln)) {
-    stop("No path to alignment file provided")
+  if (missing(aln) || !file.exists(aln) || !is_mapped_alignment(aln)) {
+    stop("No path to alignment provided")
   }
 
   if (missing(anno)) {
@@ -207,7 +208,10 @@ annotatedAlignment <- function (aln, anno, type, ...) {
     stop("No annotation type provided")
   }
   
-  alignment <- importAlignment(aln)
+  alignment <- if(!is_mapped_alignment(aln)) {
+    importAlignment(aln)
+  }
+    
   genomes <- names(alignment)
   alignment <- alignment[order(genomes)]
   genome_annotations <- strip_ext(basename(anno))
