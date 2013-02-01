@@ -32,7 +32,7 @@ align_mercator_segments <- function (seg_dir, force, opts = list()) {
   segments <- normalizePath(dir(seg_dir, "^\\d+$", full.names=TRUE))
   if (!force &&
       all(vapply(file.path(segments, "mavid.mfa"), file.exists, logical(1)))) {
-    return(invisible(segments_dir))
+    return(invisible(seg_dir))
   }
   
   aln.opts <- merge_list(list(mercator="cons"), opts)
@@ -40,11 +40,11 @@ align_mercator_segments <- function (seg_dir, force, opts = list()) {
   ncores <- detectCores() - 1
   mclapply(segments, function (seg) {
     setwd(seg)
-    fsa(seqfile="seqs.fasta", outfile="mavid.mfa", args=aln.opts)
+    fsa(seqfile="seqs.fasta", outfile="mavid.mfa", opts=aln.opts)
     setwd(cwd)
   }, mc.cores=ncores)
   setwd(cwd)
   
-  return(invisible(segments_dir))
+  return(invisible(seg_dir))
 }
 
