@@ -77,7 +77,7 @@ sub printhash{
 	}
 	my $printheader = join(" ", @header)."\n";
 	$printheader =~ s/  +/ /g;
-	print ">$ele".$printheader;
+	print ">$ele ".$printheader;
 	print join("", @aln)."\n";
     } 
 }
@@ -87,7 +87,7 @@ sub findgenomes{
     my $file = $_[0];
     my @returnarr;
     $file =~ s/a .*\n//g;
-    $file =~ s/s .*\|([\w\d\.]+)\|.+\n*/$1,/g;
+    $file =~ s/s .*([\w\d\.]*).+\n*/$1,/g;
     @returnarr = split(/,/, $file);
     @returnarr = keys %{{ map { $_ => 1 } @returnarr }}; # unique array
     return @returnarr;
