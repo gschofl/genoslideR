@@ -1,12 +1,14 @@
 #' Ab initio genome annotation using glimmer3
 #'
 #' @param genome Path to a genome file in fasta format
-#' @param glimmeropts Options for glimmer3
+#' @param opts a named list of options for glimmer3
+#' @param ... named values interpreted as options for glimmer3
 #' @param cleanup Clean up intermediate files.
 #' 
 #' @export
-glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
-                      cleanup = TRUE) {
+glimmer3 <- function (genome = seq_files[1],
+                      opts = list(o=50, g=110, t=30),
+                      ..., cleanup = TRUE) {
   
   ## check external dependencies
   hasDependencies(c("glimmer3", "elph", "long-orfs", "extract",
@@ -18,10 +20,12 @@ glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
     unlink(glimmer_dir, recursive=TRUE)
   dir.create(glimmer_dir)
   
+  opts <- merge_list(opts, list(h=TRUE))
+  
   orfs <- longorfs(genome, glimmer_dir)
   train <- extract(genome, orfs)
   icm <- build_icm(train)
-  run1 <- run_glimmer(genome, icm, "run1", glimmeropts)
+  run1 <- run_glimmer(genome, icm, tag="run1", opts)
   
   # Get the training coordinates from the first predictions
   coords <- replace_ext(run1[["glimmer3"]], "coords", level=2)
@@ -43,7 +47,7 @@ glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
                      intern = TRUE)
   
   # Run second glimmer
-  run <- run_glimmer(genome, icm, "", opts=glimmeropts, b=motif, P=startuse)
+  run <- run_glimmer(genome, icm, "", opts=opts, b=motif, P=startuse)
   
   if (cleanup)
     unlink(c(orfs, train, icm, run1, coords, motif, upstream))
@@ -53,7 +57,7 @@ glimmer3 <- function (genome, glimmeropts = list(o=50, g=110, t=30),
 
 
 # Find long, non-overlapping orfs to use as a training set
-longorfs <- function (genome, outdir) {
+longorfs <- function (genome, outdir = glimmer_dir) {
   message("Finding long orfs for training")
   longorfs <- file.path(outdir, replace_ext(basename(genome), "longorfs", level=1))
   st <- system(paste("long-orfs -n -t 1.15", genome, longorfs),
@@ -101,6 +105,10 @@ run_glimmer <- function(genome, icm, tag = "",
     strip_ext(icm, level=1)
   } else {
     replace_ext(icm, tag, level=1)
+  }
+  
+  if (any(nchar(names(args)) != 1)) {
+    stop("Use short options with glimmer3")
   }
   
   st <- SysCall("glimmer3", args=args, style="unix", redirection=FALSE,
