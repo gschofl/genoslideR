@@ -116,34 +116,5 @@ sub readall{
     return $all;
 }
 
-=pod
-sub doitbaby{
-    my @first = split(/(?=.)/,$_[0]);
-    my @second = split(/(?=.)/,$_[1]);
-    my $score = 0;
-    my $i = 0;
-#print @first;
-    
-    for($i = 0; $i < @first; $i++){
-	if($first[$i] =~ /$second[$i]/){
-	    if($first[$i] =~ /-/){
-	    # plus null
-	    }else{
-		$score += 3/$seq_length;
-	    }
-#	}elsif($second[$i] =~ /-/){
-#	    $score -= 2;
-#	}elsif($first[$i] =~ /-/){
-#	    $score -= 2;
-	}else{
-	    $score -= 2/$seq_length;
-	}
-	
-    }
-    return $score;
-    $score = 0;
-}
 
 
-
-=cut
