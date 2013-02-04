@@ -29,6 +29,7 @@
 #' @import stringr
 #' @import RCurl
 #' @import ape
+#' @import parallel
 #' @importFrom XML xpathSApply
 #' @importFrom XML xmlValue
 NULL

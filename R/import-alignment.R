@@ -98,16 +98,18 @@ readMAF <- function (maf = "~/local/workspace/Chlamydia/pomago.maf") {
 
 
 get_alignment_gaps <- function (aln_path, genomes) {
+  #aln_path <- "~/daten/alignment/aln.mfa"
   exec <- system.file("src", "runlvec.pl", package="genoslideR")
-  #exec <- "~/R/Projects/Devel/genoslideR/inst/src/runlvec.pl"
-  gap_ranges <- list()
-  for (i in seq_along(genomes)) {
-    pipe_desc <- pipe(paste(exec, aln_path, i))
+  #exec <- "~/src/R/genoslideR/inst/src/runlvec.pl"
+  cores <- detectCores()
+  gap_ranges <- mclapply(seq_along(genomes), function (genome_seq) {
+    pipe_desc <- pipe(paste(exec, aln_path, genome_seq))
     l <- scan(pipe_desc, sep="\t", quiet=TRUE,
               what=list(pos = integer(), len = integer()))
     close(pipe_desc)
-    gap_ranges[[i]] <- IRanges(start=l[["pos"]], width=l[["len"]])
-  }
+    IRanges(start=l[["pos"]], width=l[["len"]])
+  }, mc.cores = cores - 1)
+  
   names(gap_ranges) <- genomes
   gap_ranges  
 }
