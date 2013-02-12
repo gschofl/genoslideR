@@ -43,14 +43,14 @@ get_intergenic_ranges <- function(gff=chps_gff){
 
   ### delete intergenic regions of zero length
   zero_width <- which(width(inter) == 0)
-  if(not_empty(zero_width)){
+  if(!all_empty(zero_width)){
     inter <- inter[-zero_width]
     internames <- internames[-zero_width]
   }
   
   ### delete intergenic regions of unknown locus_tag
   which_na <- which(grepl("NA",internames, ignore.case=T, perl=T))
-  if(not_empty(which_na)){
+  if(!all_empty(which_na)){
     inter <- inter[-which_na]
     internames <- internames[-which_na]
   }
