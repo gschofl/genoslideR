@@ -19,11 +19,11 @@ get_intergenic_ranges <- function(gff=chps_gff){
   gene_ranges <- ranges(gff)
   
   ### generate intergenic ranges
-  gene_start <- c(start(gene_ranges), genome_size)
-  gene_start <- gene_start-1
+  gene_start <- c(start(gene_ranges)-1, genome_size)
   gene_end <- c(1, end(gene_ranges))
+  
   t <- Map(function(s, e) {
-    if(e<s){
+    if(e < s){
       IRanges(1, 0)   
     }else{
       IRanges(s, e)
@@ -43,13 +43,18 @@ get_intergenic_ranges <- function(gff=chps_gff){
 
   ### delete intergenic regions of zero length
   zero_width <- which(width(inter) == 0)
-  inter <- inter[-zero_width]
-  internames <- internames[-zero_width]
+  if(not_empty(zero_width)){
+    inter <- inter[-zero_width]
+    internames <- internames[-zero_width]
+  }
   
   ### delete intergenic regions of unknown locus_tag
   which_na <- which(grepl("NA",internames, ignore.case=T, perl=T))
-  inter <- inter[-which_na]
-  internames <- internames[-which_na]
+  if(not_empty(which_na)){
+    inter <- inter[-which_na]
+    internames <- internames[-which_na]
+  }
+ 
   
   names(inter) <- internames
   inter
