@@ -59,3 +59,47 @@ get_intergenic_ranges <- function(gff=chps_gff){
   names(inter) <- internames
   inter
 }
+
+### strand option not implemented ###
+cutAlignment <- function (aln = chlam, start, end, names = NULL, 
+                          strand = NULL, genome = 2) {
+  
+  if (length(genome) > 1) {
+    warning("More than one genome specified. Only the first will be used")
+    genome <- genome[1]
+  }
+  
+  if (is.numeric(genome)) {
+    genome <- names(aln)$alignment[genome]
+    if (is.na(genome)) {
+      stop("No annotation for genome ", which(is.na(genome))) 
+    }
+  } else {
+    if (!genome %in% seqlevels(aln)) {
+      stop("Genome ", sQuote(genome), " not present in annotation.")
+    }
+  }
+  
+  #   if (!is.null(names)) {
+  #     names <- ifelse(is.na(names), "", names)
+  #   }
+  cores <- detectCores()
+  
+  res <- mcmapply(function (s, e, n) {
+    cut_range <- GRanges(genome, IRanges(start=s, end=e, names=n))
+    get_aln_range(aln, cut_range)
+  }, s=start, e=end, n=names, mc.cores = cores - 1)
+  
+  
+  #   cut_range <- GRanges(genome, IRanges(start=start, end=end, names=names))
+  #   res <- get_aln_range(aln, cut_range)
+  
+  if (!is.null(strand)) {
+    idx <- which(strand == "-")
+    res[idx] <- lapply(res[idx], function (s) {
+      reverseComplement(as(s, "DNAStringSet"))
+    })
+  }
+  
+  res
+}
