@@ -42,7 +42,7 @@ get_intergenic_ranges <- function(gff=chps_gff){
   internames <- paste(internames[seq(1,length(internames),2)], internames[seq(2,length(internames),2)], sep=":")
 
   ### delete intergenic regions of zero length
-  zero_width <- which(width(inter) == 0)
+  zero_width <- which(IRanges::width(inter) == 0L)
   if(!all_empty(zero_width)){
     inter <- inter[-zero_width]
     internames <- internames[-zero_width]
