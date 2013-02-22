@@ -1,3 +1,16 @@
+#' @importFrom rmisc compact
+#' @importFrom rmisc compactNA
+#' @importFrom ape read.dna
+#' @importFrom ape cbind.DNAbin
+#' @importFrom ape dist.dna
+#' @importFrom ape clustal
+#' @importFrom ape muscle
+#' @importFrom ape tcoffee
+#' @importFrom ape nj
+#' @importFrom ape bionj
+#' @importFrom ape fastme.bal
+NULL
+
 #' Run mercator to build a homology map and create orthologous segments
 #' that can be aligned using FSA
 #' 
@@ -516,15 +529,15 @@ match_genes <- function(runs, merc) {
 #' 
 #' @export
 make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") {
+  
   fna <- dir(fna_dir, "\\.fa$", full.names=TRUE)
+  align.fun <- match.fun(match.arg(align, c('muscle', 'clustal', 'tcoffee')))
+  tree.fun <- match.fun(match.arg(align, c('bionj', 'nj', 'fastme.bal')))
+  
   alignment <- list()
   for (i in seq_along(fna)) {
-    dna <- ape::read.dna(fna[i], format="fasta")
-    alignment[[i]] <- switch(align,
-                             clustal=clustal(dna),
-                             muscle=muscle(dna),
-                             tcoffee=tcoffee(dna),
-                             message("Choose one of 'clustal', 'muscle', or 'tcoffee' for alignment"))
+    dna <- read.dna(fna[i], format="fasta")
+    alignment[[i]] <- align.fun(dna)
     cat(sprintf("Aligning %s ...\n", basename(fna[i])))
   }
   
@@ -540,12 +553,9 @@ make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") 
   rownames(concat_aln) <- 
     sapply(strmatch(pattern="[^>].[^:]+", rownames(concat_aln), capture=FALSE),
            "[", 1)
-  
+
   dist <- dist.dna(concat_aln, model=dist.model)
-  tree <- switch(tree,
-                 nj=nj(dist),
-                 bionj=bionj(dist),
-                 fastme=fastme.bal(dist))
+  tree <- tree.fun(dist)
   return(tree)
 }
 

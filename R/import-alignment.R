@@ -1,3 +1,10 @@
+#' @importFrom Biostrings readDNAStringSet
+#' @importFrom parallel mclapply
+#' @importFrom rmisc %.%
+#' @importFrom IRanges runValue
+#' @importFrom IRanges Map
+NULL
+
 #' Import a genome alignment
 #' 
 #' @param aln Path to a directory containing mercator segments,
@@ -23,31 +30,34 @@ importAlignment <- function (aln) {
   
   if (is_segments_dir(aln)) {
     seq <- merge_mercator_segments(seg_dir=segments_dir(aln))
-    aln <- normalizePath(metadata(seq)[["path"]])
+    aln_path <- normalizePath(metadata(seq)[["path"]])
   } else if (is_maf(aln)) {
     seq <- readMAF(aln)
-    aln <- normalizePath(metadata(seq)[["path"]])
-    on.exit(unlink(aln))
+    aln_path <- normalizePath(metadata(seq)[["path"]])
+    on.exit(unlink(aln_path))
   } else if (is_mfa(aln)) {
     seq <- readDNAStringSet(aln)
+    aln_path <- aln
   } else {
     stop("No valid alignment file provided")
   }
   
-  map <- header2map(headers=names(seq), aln_path=aln)
-  names(seq) <- names(map[["map"]])
-  metadata(seq) <- map
+  headers <- names(seq)
+  metadata(seq) <- header2map(headers, aln_path)
+  names(seq) <- strsplitN(headers, ' ', 1)
   seq
 }
 
 
-header2map <- function (headers, aln_path = aln) {
-  xs <- str_split_fixed(headers, ' ', 2)
-  genomes <- xs[,1]
+header2map <- function (headers, aln_path) {
+  if (is.list(headers)) {
+    headers <- unlist(unname(headers))
+  }
+  genomes <- strsplitN(headers, ' ', 1)
   gapranges <- get_alignment_gaps(aln_path, genomes)
   
-  map <- strsplit(xs[,2], ' ')
-  map <- Map(function (m) do.call(rbind, strsplit(m, ":")), m=map)
+  map <- strsplit(strsplitN(headers, ' ', -1), ' ')
+  map <- lapply(map, function (m) do.call(rbind, strsplit(m, ":"))) 
   map <- lapply(map, as.data.frame.matrix, stringsAsFactors=FALSE)
   map <- lapply(map, `colnames<-`, value=c("chr", "genomic_start",
                                            "genomic_end", "strand"))
@@ -56,30 +66,32 @@ header2map <- function (headers, aln_path = aln) {
     map[[i]][,c("genomic_end")] <- as.integer(map[[i]][,c("genomic_end")])
   }
   
-  width <- lapply(map, function (m) {
-    m[["genomic_end"]] - m[["genomic_start"]] + 1L
-  })
-  map <- Map(update_position, map, width, gapranges)
-  map <- setNames(map, genomes)
+  genomicMap <- GRangesList(Map(function(g, m) {
+    GRanges(seqnames=g, IRanges(start=m[["genomic_start"]],
+                                end=m[["genomic_end"]],
+                                names=m[["chr"]]),
+            strand=m[["strand"]])
+  }, g = as.list(genomes), m = map))
+  names(genomicMap) <- IRanges::Map(as.character%.%runValue, seqnames(genomicMap))
   
-  list(map = map, gaps = gapranges) 
+  alignmentMap <- GRangesList(Map(update_position, m = map, g = as.list(genomes)))
+  names(alignmentMap) <- IRanges::Map(as.character%.%runValue, seqnames(alignmentMap))
+  
+  list(gMap=genomicMap, aMap=alignmentMap, gaps=gapranges) 
 }
 
 
-update_position <- function (m, w, r) {
+update_position <- function (m, g) {
   s <- 1
-  mat <- matrix(rep(0, nrow(m)*2), ncol=2,
-                dimnames=list(NULL, c("aln_start", "aln_end")))
-  for (i in seq_len(nrow(m))) {
+  w <- m[["genomic_end"]] - m[["genomic_start"]] + 1L
+  mat <- matrix(rep(0, nrow(m)*2), ncol=2)
+  for (i in seq_len(nrow(mat))) {
     mat[i,1] <- s
     mat[i,2] <- w[i] + s - 1L
     s <- mat[i,2] + 1L
   }
-#   mat <- t(apply(mat, 1, function(x) {
-#     make_gapped_range(x[1], x[2], r)
-#   }))
-  
-  cbind(m, mat)
+  GRanges(seqnames=g, IRanges(mat[,1], mat[,2], names=m[["chr"]]),
+          strand="*")
 }
 
 
@@ -100,17 +112,18 @@ readMAF <- function (maf = "~/local/workspace/Chlamydia/pomago.maf") {
 get_alignment_gaps <- function (aln_path, genomes) {
   #aln_path <- "~/daten/alignment/aln.mfa"
   exec <- system.file("src", "runlvec.pl", package="genoslideR")
-  #exec <- "~/src/R/genoslideR/inst/src/runlvec.pl"
+  #exec <- "~/R/Projects/Devel/genoslideR/inst/src/runlvec.pl"
   cores <- detectCores()
-  gap_ranges <- mclapply(seq_along(genomes), function (genome_seq) {
+  gap_ranges <- GRangesList(mclapply(seq_along(genomes), function (genome_seq) {
     pipe_desc <- pipe(paste(exec, aln_path, genome_seq))
     l <- scan(pipe_desc, sep="\t", quiet=TRUE,
               what=list(pos = integer(), len = integer()))
     close(pipe_desc)
-    IRanges(start=l[["pos"]], width=l[["len"]])
-  }, mc.cores = cores - 1)
-  
+    GRanges(seqnames=genomes[genome_seq],
+            ranges=IRanges(start=l[["pos"]], width=l[["len"]]),
+            strand="*")
+  }, mc.cores = cores - 1))
   names(gap_ranges) <- genomes
-  gap_ranges  
+  gap_ranges
 }
 

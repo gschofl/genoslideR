@@ -1,3 +1,8 @@
+#' @importFrom rmisc replace_ext
+#' @importFrom rmisc not.null
+#' @importFrom rmisc all_empty
+NULL
+
 #' Ab initio genome annotation using glimmer3
 #'
 #' @param fasta Path to a genome file(s) in fasta format
@@ -104,7 +109,7 @@ run_glimmer <- function(f, icm, tag = "",
   
   message("Running Glimmer3")
   args <- merge_list(opts, list(...))
-  run <- if (is_empty(tag)) {
+  run <- if (all_empty(tag)) {
     strip_ext(icm, level=1)
   } else {
     replace_ext(icm, tag, level=1)

@@ -1,3 +1,9 @@
+#' @importFrom RCurl getURL
+#' @importFrom RCurl curlOptions
+#' @importFrom RCurl getCurlHandle
+#' @importFrom rmisc not_empty
+NULL
+
 #' Retrieve bacterial genomes from NCBI FTP site
 #' 
 #' Get genomes from \url{ftp://ftp.ncbi.nih.gov/genomes/Bacteria/}
@@ -24,7 +30,7 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
   if (is.numeric(which)) {
     target <- bact_dirs[which]
   } else {
-    target <-bact_dirs[grep(which, bact_dirs, ignore.case=ignore.case)] %||% NA
+    target <- bact_dirs[grep(which, bact_dirs, ignore.case=ignore.case)] %||% NA
   }
   
   print(target)

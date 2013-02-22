@@ -17,19 +17,6 @@
 #' @docType package
 #' @title Genome Alignments and Annotation.
 #' @keywords package
-#' 
-#' @import BiocGenerics
 #' @import methods
-#' @import GenomicRanges
-#' @import IRanges
-#' @import Biostrings
-#' @import biofiles
-#' @import rentrez
-#' @import rmisc
-#' @import stringr
-#' @import RCurl
-#' @import ape
-#' @import parallel
-#' @importFrom XML xpathSApply
-#' @importFrom XML xmlValue
+#' @import Rcpp
 NULL

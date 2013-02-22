@@ -1,7 +1,9 @@
+#' @importFrom genomeIntervals readGff3
+#' @importFrom genomeIntervals getGffAttribute
+NULL
+
 gff2anchors <- function (gff, anchor, id_as_anchor_num=FALSE) {
-  
-  stopifnot(require(genomeIntervals))
-  gff <- genomeIntervals::readGff3(file=gff)
+  gff <- readGff3(file=gff)
   
   getPosition <- function (gff) {
     start <- vector(mode="integer", length=nrow(gff))
@@ -18,10 +20,10 @@ gff2anchors <- function (gff, anchor, id_as_anchor_num=FALSE) {
   cds <- gff[attr(gff, "annotation")$type == "CDS" | attr(gff, "annotation")$type == "pseudogenic_exon",]
   pos <- getPosition(cds)
   anchor.df <- data.frame(anchorNum=if (id_as_anchor_num) {
-    escape(getGffAttribute(cds, attribute="ID"))
-  } else {
-    seq_len(nrow(cds))
-  },
+                            escape(getGffAttribute(cds, attribute="ID"))
+                          } else {
+                            seq_len(nrow(cds))
+                          },
                           seqname=seq_name(cds),
                           strand=strand(cds),
                           start=pos$start,

@@ -58,7 +58,12 @@ capitalize <- function(x) {
 
 is_mapped_alignment <- function (aln) {
   is(aln, "DNAStringSet") &&
-    all(c("map", "gaps") %in% names(metadata(aln)))
+    all(c("aMap", "gMap", "gaps") %in% names(metadata(aln)))
+}
+
+is_sliced_alignment <- function (aln) {
+  is(aln, "DNAStringSet") &&
+    all(c("genomic_position", "alignment_position") %in% names(metadata(aln)))
 }
 
 is_fasta <- function(f) {
@@ -86,6 +91,7 @@ is_maf <- function (f) {
   grepl("^a", l[i]) && grepl("^s ", l[i+1])
 }
 
+#' @importFrom rmisc hasCommand
 hasDependencies <- function(cmd) {
   lcmd <- hasCommand(cmd)
   if (any(!lcmd)) {

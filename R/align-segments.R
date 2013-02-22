@@ -45,6 +45,7 @@ is_segments_dir <- function (dir) {
 }
 
 segments_dir <- function (dir) {
+  dir <- rmisc::trim(dir, .Platform$file.sep)
   dir <- if (split_path(dir) == "segments")
     dir
   else

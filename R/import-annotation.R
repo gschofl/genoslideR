@@ -6,6 +6,18 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
+#' @importFrom rentrez efetch
+#' @importFrom rentrez esearch
+#' @importFrom rentrez esummary
+#' @importFrom rentrez docsum
+#' @importFrom rentrez content
+#' @importFrom rmisc strip_ext
+#' @importFrom rmisc xvalue
+#' @importFrom rmisc strsplitN
+#' @importFrom rmisc %||%
+#' @importFrom biofiles as.gbLocation
+NULL
+
 import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
   
   skip <- sum(count.fields(file, sep="\t") < 9)
@@ -42,10 +54,9 @@ import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
 
   if (is.null(seqid)) {
     # attempt to fetch accession number
-    x <- content(efetch(proteinID[1], "protein", "gp", "xml"))
-    xpath <- '//GBQualifier[contains(GBQualifier_name, "coded_by")]/GBQualifier_value'
-    x <- xpathSApply(x, xpath, xmlValue)
-    if (is_empty(x)) {
+    x <- content(efetch(proteinID[1], "protein", "gp", "xml")) 
+    x <- xvalue(x, '//GBQualifier[contains(GBQualifier_name, "coded_by")]/GBQualifier_value')
+    if (all_empty(x)) {
       stop("No accession number could be retrieved as identifier for these annotations. Provide an identifier.")
     } else {
       seqid <- strip_ext(accession(as.gbLocation(x)))

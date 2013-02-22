@@ -1,3 +1,9 @@
+#' @importFrom rmisc merge_list
+#' @importFrom rmisc SysCall
+#' @importFrom parallel detectCores
+#' @importFrom parallel mclapply
+NULL
+
 #' Sequence alignment with fsa
 #' 
 #' @param seqfile Sequence files in fasta format.
@@ -25,8 +31,6 @@ fsa <- function (seqfile, outfile = "fsa.mfa", opts = list(), ...) {
 }
 
 
-#' @importFrom parallel detectCores
-#' @importFrom parallel mclapply
 align_mercator_segments <- function (seg_dir, force, opts = list()) {
   
   segments <- normalizePath(dir(seg_dir, "^\\d+$", full.names=TRUE))
