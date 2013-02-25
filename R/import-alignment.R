@@ -49,12 +49,16 @@ importAlignment <- function (aln) {
 }
 
 
-header2map <- function (headers, aln_path) {
+header2map <- function (headers, aln_path = NULL) {
   if (is.list(headers)) {
     headers <- unlist(unname(headers))
   }
   genomes <- strsplitN(headers, ' ', 1)
-  gapranges <- get_alignment_gaps(aln_path, genomes)
+  if (not_null(aln_path)) {
+    gapranges <- get_alignment_gaps(aln_path, genomes)
+  } else {
+    gapranges <- NULL
+  }
   
   map <- strsplit(strsplitN(headers, ' ', -1), ' ')
   map <- lapply(map, function (m) do.call(rbind, strsplit(m, ":"))) 

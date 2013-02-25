@@ -9,6 +9,7 @@
 #' @importFrom ape nj
 #' @importFrom ape bionj
 #' @importFrom ape fastme.bal
+#' @importFrom ape write.tree
 NULL
 
 #' Run mercator to build a homology map and create orthologous segments
@@ -479,7 +480,7 @@ guide_tree <- function (wd) {
   match_genes(runs, merc)
   
   tree <- make_tree(merc_tree, "muscle", "K80", "nj")
-  write.tree(tree, file=file.path(merc_out, "treefile"))
+  ape::write.tree(tree, file=file.path(merc_out, "treefile"))
   
   return(invisible(tree))
 }
@@ -532,7 +533,7 @@ make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") 
   
   fna <- dir(fna_dir, "\\.fa$", full.names=TRUE)
   align.fun <- match.fun(match.arg(align, c('muscle', 'clustal', 'tcoffee')))
-  tree.fun <- match.fun(match.arg(align, c('bionj', 'nj', 'fastme.bal')))
+  tree.fun <- match.fun(match.arg(tree, c('bionj', 'nj', 'fastme.bal')))
   
   alignment <- list()
   for (i in seq_along(fna)) {

@@ -58,7 +58,7 @@ merge_segments <- function(segments, headers) {
   colnames(mat) <- genomes
   incomplete <- which(!apply(mat, 1, all))
   for (i in incomplete) {
-    present <- which(mat[i,] == FALSE)
+    present <- which(mat[i,] == TRUE)
     absent <- which(mat[i,] == FALSE)
     w <- unique(Biostrings::width(seqlist[[i]]))
     gaps <- dup('-', w)
