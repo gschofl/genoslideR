@@ -2,16 +2,17 @@ Package: genoslideR
 Type: Package
 Title: Handle multiple alignments with annotation.
 Version: 0.1-1
-Date: 2012-11-05
+Date: 2013-02-25
 Author: Gerhard Schoefl <gschof@yahoo.de>,
     Jochen Bick <j.bick@uni-jena.de>,
     Ding Wang <d.wang@uni-jena.de>
 Maintainer: Gerhard Schoefl <gschof@yahoo.de>
-Description: More about what it does (maybe more than one line)
-License: BSD
+Description: 
+License: MIT
 Depends:
     R (>= 2.15),
-    Rcpp
+    Rcpp (>= 0.10.2)
+LinkingTo: Rcpp
 Imports:
     methods,
     BiocGenerics,
@@ -26,7 +27,6 @@ Imports:
     ape,
     parallel
 Collate:
-    'aligner.R'
     'annotationList.R'
     'annotatedAlignment.R'
     'genoslideR.R'
@@ -43,3 +43,4 @@ Collate:
     'sliceAnnotatedAlignment.R'
     'gapped-ranges.R'
     'get-slices.R'
+    'RcppExports.R'

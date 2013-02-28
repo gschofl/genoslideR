@@ -48,14 +48,15 @@ NULL
 setClass("annotationList", contains="GRangesList")
 
 
-annotationList <- function(files = anno, type = "gff", ...) {
+annotationList <- function(files, type = "gff", ...) {
   
   type <- match.arg(type, c("gff", "ptt", "ftb", "table"))
   importer <- match.fun(paste0("import_annotation_from_", type))
   
   if (type %in% c("gff", "ftable")) {
     # import_annotation_from_gff
-    anno <- GRangesList(lapply(files, importer))
+    features <- list(...)[["features"]] %|null|% c("CDS", "RNA")
+    anno <- GRangesList(lapply(files, importer, features=features))
     names(anno) <- seqnames(seqinfo(anno))
   }
   

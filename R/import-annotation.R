@@ -148,7 +148,8 @@ import_annotation_from_ftb <- function(file) {
 }
 
 
-import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA")) {
+import_annotation_from_gff <- function(file = files[1],
+                                       features = c("CDS", "RNA")) {
   
   l <- readLines(file)
   nlines <- -1L
@@ -180,7 +181,7 @@ import_annotation_from_gff <- function(file = anno[1], features = c("CDS", "RNA"
                           strand = character(),
                           phase = integer(),
                           attributes = character()))
-  
+
   f_idx <- grep(paste0(features, collapse="|"), gff[["type"]], ignore.case=TRUE)
   ranges <- IRanges(gff[["start"]], gff[["end"]])
   ovl <- as(findOverlaps(ranges[f_idx,], IntervalTree(ranges), type="equal"),

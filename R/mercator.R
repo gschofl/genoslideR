@@ -1,5 +1,7 @@
 #' @importFrom rmisc compact
 #' @importFrom rmisc compactNA
+#' @importFrom rmisc merge_list
+#' @importFrom rmisc SysCall
 #' @importFrom ape read.dna
 #' @importFrom ape cbind.DNAbin
 #' @importFrom ape dist.dna
@@ -10,6 +12,8 @@
 #' @importFrom ape bionj
 #' @importFrom ape fastme.bal
 #' @importFrom ape write.tree
+#' @importFrom parallel detectCores
+#' @importFrom parallel mcmapply
 NULL
 
 #' Run mercator to build a homology map and create orthologous segments
@@ -60,8 +64,8 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   hasDependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
                     "makeAlignmentInput",
                     "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
-                    "makeBreakpointAlignmentInput", "mavidAlignDirs",
-                    "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
+                    "makeBreakpointAlignmentInput", "findBreakpoints",
+                    "breakMap", "hmap2omap", "omap2coordinates"))
   
   # if not specified the working directory is the parent directory of all
   # sequence files
@@ -114,8 +118,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   # generate mercator-readable gff files
   gff_files <- gff_for_mercator(f=anno_files, type=annotation, wd)
   
-  # generate mercator-readable fasta files and mask repeats
-  # if mask = TRUE
+  # generate mercator-readable fasta files
   fna_files <- fna_for_mercator(f=seq_files, wd)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
@@ -129,7 +132,7 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
                   sep = "-", mercator = TRUE)
   
   # run Mercator on the input files.
-  # This generates a directory 'orthologous_segments' with subdirectories
+  # This generates a directory 'segments' with subdirectories
   # containing the sequences to be aligned for each orthologous segment set     
   # identified by the orthology map.
   segment_dir <- run_mercator(wd)
@@ -467,7 +470,7 @@ guide_tree <- function (wd) {
   
   runs <- read.table(f[runs_pos], header=FALSE, colClasses="integer")
   runs <- runs[complete.cases(runs),]
-  names(runs) <- scan(f[grepl("genomes", f)], what="character")
+  names(runs) <- scan(f[grepl("genomes", f)], what="character", quiet=TRUE)
   
   if (nrow(runs) == 0)
     stop("There are no orthologous genes to generate a guide tree")
@@ -577,12 +580,13 @@ find_breakpoints <- function (wd) {
   pwd <- getwd()
   setwd(merc_out)
   on.exit(setwd(pwd))
-  
   system("omap2hmap genomes < pre.map > pre.h.map")
   system("makeBreakpointGraph --remove-colinear pre.h.map treefile")
   system("makeBreakpointAlignmentInput --out-dir=breakpoints")
-  system("mavidAlignDirs --init-dir=breakpoints")
-  system("findBreakpoints -r 200 pre.h.map treefile edges breakpoints > myBreakpoints")
+  fsaAlignSegmentDirs(initdir="breakpoints", seqfile="seqs.fasta",
+                      outfile="fsa.mfa", fsa.opts=list(logfile="fsa.log"),
+                      ncores=detectCores() - 1)
+  system("findBreakpoints -r 200 --alignmentFile=fsa.mfa pre.h.map treefile edges breakpoints > myBreakpoints")
   system("breakMap myBreakpoints < pre.h.map > better.h.map")
   system("hmap2omap genomes < better.h.map > better.map")
   system("omap2coordinates < better.map > coordinates")
@@ -590,4 +594,78 @@ find_breakpoints <- function (wd) {
   return(invisible(TRUE))
 }
 
+
+fsaAlignSegmentDirs <- function (initdir = ".", seqfile = "seqs.fasta",
+                                 outfile = "fsa.mfa", constraints = "cons",
+                                 skip.completed = TRUE, fsa.opts = list(),
+                                 ncores = detectCores()) {
+  if (!hasCommand("fsa")) {
+    stop("FSA is not installed")
+  }
+  
+  segments <- normalizePath(dir(initdir, "^\\d+$", full.names=TRUE))
+  segments <- segments[order(as.numeric(split_path(segments)))]
+  segdirs <- mcmapply(alignSegmentDir, segment = segments,
+                      MoreArgs = list(seqfile = seqfile, outfile = outfile,
+                                      constraints = constraints, skip.completed = skip.completed,
+                                      fsa.opts = fsa.opts),
+                      mc.cores=ncores, USE.NAMES=FALSE)
+  
+  return(invisible(segdirs))
+}
+
+
+alignSegmentDir <- function(segment, seqfile, constraints, outfile = "fsa.mfa",
+                            skip.completed = TRUE, fsa.opts = list()) {
+  
+  if (skip.completed && file.exists(file.path(segment, outfile))) {
+    return(NULL)
+  }
+  
+  # check for seqfile
+  if (!file.exists(file.path(segment, seqfile))) {
+    stop("Directory ", sQuote(basename(segment)), " does not have the required seqfile ",
+         sQuote(seqFile), .call=FALSE)
+  }
+  
+  # check for optional constraints file
+  if (!file.exists(file.path(segment, constraints))) {
+    warning("Directory ", sQuote(basename(segment)), " does not have constraints",
+            call.=FALSE, immediate.=TRUE)
+  } else {
+    fsa.opts <- merge_list(fsa.opts, list(mercator=constraints))
+  }
+  
+  cwd <- getwd()
+  setwd(segment)
+  fsa(seqfile, outfile, fsa.opts)
+  setwd(cwd)
+}
+
+
+#' Sequence alignment with fsa
+#' 
+#' @param seqfile Sequence files in fasta format.
+#' @param outfile Multifasta alignment file.
+#' @param opts a named list of options for fsa.
+#' @param ... Named values interpreted as options for fsa.
+#' 
+#' @export
+fsa <- function (seqfile, outfile = "fsa.mfa", opts = list(), ...) {
+  
+  if (missing(seqfile)) {
+    system("fsa --help")
+    return(invisible(NULL))
+  }
+  
+  if (!all(file.exists(seqfile)))
+    stop("Can not open input files")
+  
+  if (length(seqfile) > 1)
+    infiles <- paste(infiles, collapse=" ")
+  
+  args <- merge_list(opts, list(...))
+  SysCall("fsa", args = args, stdin = seqfile, stdout = outfile,
+          redirection = FALSE, style = "gnu")
+}
 
