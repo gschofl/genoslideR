@@ -1,18 +1,21 @@
 #' Align orthologous genome segments with \code{fsa} 
 #' 
 #' @param seg_dir Path to mercator segments.
-#' @param force Realign an existing alignment.
-#' @param opts a named list of options for \code{\link{fsa}}. The default
-#' options are optimizes for long sequences.
+#' @param fsa.opts a named list of options for \code{\link{fsa}}. The default
+#' options are optimisiing fsa for long sequence alignment.
 #' @param ... Named values interpreted as options for fsa.
+#' @param skip.completed if \code{TRUE}, don't realign an existing alignment.
+#' @param ncores Number of cores to utilised for parallelisation
 #' 
 #' @export
-alignSegments <- function (seg_dir, force = FALSE,
-                           opts = list(anchored = TRUE,
-                                       translated = TRUE,
-                                       exonerate = TRUE,
-                                       softmasked = TRUE),
-                           ...) {
+alignSegments <- function (seg_dir,
+                           fsa.opts = list(anchored = TRUE,
+                                           translated = TRUE,
+                                           exonerate = TRUE,
+                                           softmasked = TRUE),
+                           ...,
+                           skip.completed = TRUE,
+                           ncores = detectCores() - 1) {
   
   if (is_segments_dir(seg_dir)) {
     seg_dir <- segments_dir(seg_dir)
@@ -21,10 +24,13 @@ alignSegments <- function (seg_dir, force = FALSE,
   }
   
   opts <- merge_list(opts, list(...))
-  seg_dir <- align_mercator_segments(seg_dir, force, opts)
+  seg_dir <- fsaAlignSegmentDirs(initdir=seg_dir, seqfile="seqs.fasta",
+                                 outfile="fsa.mfa", constraints="cons",
+                                 skip.completed=skip.completed,
+                                 fsa.opts=fsa.opts, ncores=ncores)
 
   message("Pass the path to the aligned mercator segments to the 'annotatedAlignment()' constructor to create an 'annotatedAlignment' object")
-  return(seg_dir)
+  return(invisible(NULL))
 }
 
 
@@ -43,6 +49,7 @@ is_segments_dir <- function (dir) {
   else 
     return(FALSE)
 }
+
 
 segments_dir <- function (dir) {
   dir <- rmisc::trim(dir, paste0(.Platform$file.sep, "$"))

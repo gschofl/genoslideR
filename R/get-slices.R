@@ -1,35 +1,36 @@
 #' @importFrom IRanges which
 #' @importFrom IRanges order
 #' @importFrom IRanges compact
+#' @importFrom IRanges subseq
 #' @importFrom Biostrings DNAStringSet
+#' @importFrom Biostrings xscat
 NULL
 
 get_slices <- function (aln, slices) {
   ranges <- ranges(slices)
   genome <- as.character(runValue(seqnames(slices)))
-  
   ## make sure we extract slice with respect to only one genome
   if (length(genome) > 1) {
     stop("More than one genome provided for slicing", call.=FALSE)
   }
   
-  # Map of gaps
-  mgps <- genoslideR::gaps(aln)[[genome]]
-  # Map of genomic ranges
-  mgr <- gMap(aln)[[genome]]
   # Map of alignment ranges
-  mar <- aMap(aln)[[genome]]
-  
-  pb <- txtProgressBar(max=length(ranges))
+  g_amap <- aMap(aln)[[genome]]
+  # Map of genomic ranges
+  g_gmap <- gMap(aln)[[genome]]
+  # Map of gaps
+  g_gaps <- genoslideR::gaps(aln)[[genome]]
+
+  # pb <- txtProgressBar(max=length(ranges))
   aln_cuts <- vector("list", length(ranges))
   names(aln_cuts) <- names(ranges)
   for (i in seq_along(ranges)) {
-    hit <- subjectHits(findOverlaps(ranges[i], ranges(mgr), type="any"))
+    hit <- subjectHits(findOverlaps(ranges[i], ranges(g_gmap), type="any"))
     if (length(hit) == 0) {
       aln_cuts[i] <- DNAStringSet()
     } else {
-      hit_range <- mgr[hit,]
-      hit_order <- IRanges::order(ranges(hit_range))
+      hit_range <- g_gmap[hit,]
+      hit_order <- IRanges::order(hit_range)
       hit <- hit[hit_order]
       hit_range <- hit_range[hit_order,]
       
@@ -43,20 +44,16 @@ get_slices <- function (aln, slices) {
       }
       
       cut_range <- update_reverse_pos(hit_range, cut_range)        
-      updated_g_range <- update_genome_pos(cut_range, hit_range,
-                                           pwog_hit_range=mar[hit,])
-      
-      # cut range with gaps
-      cr <- unlist(IRangesList(Map(make_gapped_range,
-                                   start = start(updated_g_range),
-                                   end = end(updated_g_range),
-                                   gaprange = list(mgps))))
-      aln_cuts[i] <- cut_alignment(aln, cr, updated_g_range)
+      updated_g_range <- update_genome_pos(cut_range, hit_range, g_amap[hit,])
+    
+      # cut range with gaps 
+      cr <- gap_range(start(updated_g_range), end(updated_g_range), g_gaps, g_gmap)
+      aln_cuts[i] <- cut_alignment(cr, updated_g_range, aln)
     }
-    print(i)
-    #setTxtProgressBar(pb, i)
+    # print(i)
+    # setTxtProgressBar(pb, i)
   }
-  close(pb)
+  # close(pb)
   aln_cuts
 }
 
@@ -83,20 +80,23 @@ update_reverse_pos <- function(hit_range, cut_range) {
 }
 
 
-cut_alignment <- function (aln, cr, updated_g_range) {
-  
+subseq2 <- function(x, start, end, strand) {
+  if (strand == "-") {
+    reverse(subseq(x, start, end))
+  } else {
+    subseq(x, start, end)
+  }
+} 
+
+
+cut_alignment <- function (cr, updated_g_range, aln) {
+  gmap <- ranges(gMap(aln))
+  amap <- ranges(aMap(aln))
+  gaps <- ranges(genoslideR::gaps(aln))
   strand <- as.character(strand(updated_g_range))
   seqname <- as.character(runValue(seqnames(updated_g_range)))
-  cuts <- vector("list", length(strand))
-  
-  for (i in seq_along(cuts)) {
-    if (strand[i] == "-") {
-      cuts[[i]] <- reverse(subseq(alignment(aln), start(cr)[i], end(cr)[i]))
-    } else {
-      cuts[[i]] <- subseq(alignment(aln), start(cr)[i], end(cr)[i])
-    }
-  }
-  
+  cuts <- mapply(subseq2, start = start(cr), end = end(cr),
+                 strand = strand, MoreArgs=list(x = alignment(aln)))
   if (length(cuts) == 1) {
     cuts <- IRanges::compact(cuts[[1]])
   } else {
@@ -104,7 +104,7 @@ cut_alignment <- function (aln, cr, updated_g_range) {
   }
   
   alignment_position <- GRanges(seqname, cr, strand)
-  genomic_position <- make_ungapped_genomic_pos(cr, aln)
+  genomic_position <- ungap_range(cr, amap, gmap, gaps)
   metadata(cuts) <- list(alignment_position = alignment_position,
                          genomic_position = genomic_position)
   cuts
