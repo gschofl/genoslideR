@@ -23,7 +23,7 @@ alignSegments <- function (seg_dir,
     stop("No valid path to mercator segments")
   }
   
-  opts <- merge_list(opts, list(...))
+  fsa.opts <- merge_list(fsa.opts, list(...))
   seg_dir <- fsaAlignSegmentDirs(initdir=seg_dir, seqfile="seqs.fasta",
                                  outfile="fsa.mfa", constraints="cons",
                                  skip.completed=skip.completed,

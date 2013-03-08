@@ -9,6 +9,7 @@ int make_ungapped_position(int pos, IntegerVector gapstart, IntegerVector gapwid
 // [[Rcpp::export]]
 Rcpp::S4 make_ungapped_ranges(IntegerVector start,
                               IntegerVector end,
+                              CharacterVector nm,
                               Rcpp::S4 gaprange)
 {
   Rcpp::S4 range = Rcpp::S4("IRanges");
@@ -26,18 +27,26 @@ Rcpp::S4 make_ungapped_ranges(IntegerVector start,
   
   range.slot("start") = ungapped_start;
   range.slot("width") = ungapped_end - ungapped_start + 1;
+  range.slot("NAMES") = nm;
   return range;
 }
-
 
 // [[Rcpp::export]]
 Rcpp::S4 make_gapped_ranges(IntegerVector start,
                             IntegerVector end,
-                            IntegerVector gapstart,
-                            IntegerVector gapwidth,
-                            int aln_len)
+                            Rcpp::S4 gaprange)
 {
   Rcpp::S4 range = Rcpp::S4("IRanges");
+  Rcpp::S4 ranges = gaprange.slot("ranges");
+  Rcpp::S4 seqnames = gaprange.slot("seqnames");
+  Rcpp::S4 seqinfo = gaprange.slot("seqinfo");
+  
+  IntegerVector gapstart = ranges.slot("start");
+  IntegerVector gapwidth = ranges.slot("width");
+  int seqnames_idx = seqnames.slot("values");
+  IntegerVector seqlengths = seqinfo.slot("seqlengths");
+  int aln_len = seqlengths[ seqnames_idx ];
+  
   int n = start.size();
   int len = gapstart.size();
   int gap_end = gapstart[len-1] + gapwidth[len-1] - 1;
@@ -70,7 +79,6 @@ Rcpp::S4 make_gapped_ranges(IntegerVector start,
   range.slot("width") = gapped_width;
   return range;
 }
-
 
 int make_ungapped_position(int pos, IntegerVector gapstart, IntegerVector gapwidth, bool right)
 {

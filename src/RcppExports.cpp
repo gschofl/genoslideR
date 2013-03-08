@@ -16,28 +16,27 @@ BEGIN_RCPP
 END_RCPP
 }
 // make_ungapped_ranges
-Rcpp::S4 make_ungapped_ranges(IntegerVector start, IntegerVector end, Rcpp::S4 gaprange);
-RcppExport SEXP genoslideR_make_ungapped_ranges(SEXP startSEXP, SEXP endSEXP, SEXP gaprangeSEXP) {
+Rcpp::S4 make_ungapped_ranges(IntegerVector start, IntegerVector end, CharacterVector nm, Rcpp::S4 gaprange);
+RcppExport SEXP genoslideR_make_ungapped_ranges(SEXP startSEXP, SEXP endSEXP, SEXP nmSEXP, SEXP gaprangeSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope __rngScope;
+    IntegerVector start = Rcpp::as<IntegerVector >(startSEXP);
+    IntegerVector end = Rcpp::as<IntegerVector >(endSEXP);
+    CharacterVector nm = Rcpp::as<CharacterVector >(nmSEXP);
+    Rcpp::S4 gaprange = Rcpp::as<Rcpp::S4 >(gaprangeSEXP);
+    Rcpp::S4 __result = make_ungapped_ranges(start, end, nm, gaprange);
+    return Rcpp::wrap(__result);
+END_RCPP
+}
+// make_gapped_ranges
+Rcpp::S4 make_gapped_ranges(IntegerVector start, IntegerVector end, Rcpp::S4 gaprange);
+RcppExport SEXP genoslideR_make_gapped_ranges(SEXP startSEXP, SEXP endSEXP, SEXP gaprangeSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope __rngScope;
     IntegerVector start = Rcpp::as<IntegerVector >(startSEXP);
     IntegerVector end = Rcpp::as<IntegerVector >(endSEXP);
     Rcpp::S4 gaprange = Rcpp::as<Rcpp::S4 >(gaprangeSEXP);
-    Rcpp::S4 __result = make_ungapped_ranges(start, end, gaprange);
-    return Rcpp::wrap(__result);
-END_RCPP
-}
-// make_gapped_ranges
-Rcpp::S4 make_gapped_ranges(IntegerVector start, IntegerVector end, IntegerVector gapstart, IntegerVector gapwidth, int aln_len);
-RcppExport SEXP genoslideR_make_gapped_ranges(SEXP startSEXP, SEXP endSEXP, SEXP gapstartSEXP, SEXP gapwidthSEXP, SEXP aln_lenSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope __rngScope;
-    IntegerVector start = Rcpp::as<IntegerVector >(startSEXP);
-    IntegerVector end = Rcpp::as<IntegerVector >(endSEXP);
-    IntegerVector gapstart = Rcpp::as<IntegerVector >(gapstartSEXP);
-    IntegerVector gapwidth = Rcpp::as<IntegerVector >(gapwidthSEXP);
-    int aln_len = Rcpp::as<int >(aln_lenSEXP);
-    Rcpp::S4 __result = make_gapped_ranges(start, end, gapstart, gapwidth, aln_len);
+    Rcpp::S4 __result = make_gapped_ranges(start, end, gaprange);
     return Rcpp::wrap(__result);
 END_RCPP
 }
