@@ -61,12 +61,3 @@ segments_dir <- function (dir) {
   return(dir)
 }
 
-
-
-
-
-
-
-
-
-

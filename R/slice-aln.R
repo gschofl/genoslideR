@@ -1,3 +1,12 @@
+#' @importFrom IRanges compact
+#' @importFrom GenomicRanges seqlevels
+#' @importFrom Biostrings xscat
+#' @importFrom Biostrings subseq
+#' @importFrom Biostrings reverse
+#' @importFrom rmisc %|null|%
+NULL
+
+
 #' INTERNAL: Slice genomic ranges mapped to an alignment
 #'
 #' @param ranges A \code{\linkS4class{Granges}} object.

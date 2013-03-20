@@ -16,6 +16,9 @@
 #' @importFrom rmisc strsplitN
 #' @importFrom rmisc %||%
 #' @importFrom biofiles as.gbLocation
+#' @importFrom biofiles gbRecord
+#' @importFrom biofiles ranges
+#' @importFrom GenomicRanges mcols<-
 NULL
 
 import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
@@ -255,6 +258,20 @@ parse_attr <- function (anno) {
     setNames(object=vapply(kv, "[", 2L, FUN.VALUE=character(1)),
              nm=vapply(kv, "[", 1L, FUN.VALUE=character(1)))
   })
+}
+
+
+import_annotation_from_genbank <- function(file = files[1],
+                                           features = c("CDS", "RNA")) {
+  qualifiers <- c("gene", "locus_tag", "db_xref:geneID", "protein_id", "product")
+  gbk <- suppressMessages(gbRecord(file, with_sequence=FALSE))
+  on.exit(unlink(gbk@dir, recursive=TRUE))
+  f_list <- biofiles::select(gbk, key=features)
+  r <- biofiles::ranges(f_list, join=FALSE, key=TRUE, include=qualifiers)
+  quals <- mcols(r)[, c('key','gene','locus_tag','geneID','protein_id','product')] 
+  names(quals) <- c("type","gene","synonym","geneID","proteinID","product")
+  mcols(r) <- quals
+  r
 }
 
 
