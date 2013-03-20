@@ -29,6 +29,7 @@ merge_mercator_segments <- function (seg_dir, writeToFile = FALSE, outfile =  NU
 
 map2header <- function (map, genomes) {
   len <- length(genomes) 
+  by <- gl(len, nrow(map))
   idx <- Map(base::seq, seq(from=1, by=4, length.out=len),
              seq(from=4, by=4, length.out=len))
   m <- do.call("rbind", lapply(idx, function (j) {
@@ -36,10 +37,9 @@ map2header <- function (map, genomes) {
     colnames(m) <- c("chr", "start", "end", "strand")
     m
   }))
-  m <- m[complete.cases(m), ]
   m[["start"]] <- m[["start"]] + 1L
-  m <- split(m, as.factor(m$chr))
-  coverage <- Map(function(x) max(x[["end"]]), m)
+  m <- setNames(split(m, by), nm=genomes)
+  coverage <- Map(function(x) max(x[["end"]], na.rm=TRUE), m)
   Map(collapse_slices, df=m, name=genomes, cov=coverage)
 } 
 

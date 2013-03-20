@@ -28,19 +28,15 @@ repeatmasker <- function (f) {
   
   pwd <- dirname(f)
   fn <- basename(f)
-  
-  ## check if a file is already softmasked
-  if (grepl(glob2rx("*.softmasked.f*"), fn)) {
-    warning(sQuote(fn), " seems to be already masked.\nSet mask = FALSE if you use premasked files",
-            call.=FALSE, immediate.=FALSE)
-    return(f)
-  }
-  
+  ## check if a softmasked file is already exists
   mask_dir <- file.path(pwd, paste0(".masked_", strip_ext(fn)))
-  if (file.exists(mask_dir))
-    unlink(mask_dir, recursive=TRUE)
+  softmasked <- file.path(mask_dir, paste0(strip_ext(fn), '.softmasked.fa'))
+  if (file.exists(softmasked)) {
+    message(sQuote(basename(softmasked)), " already exists.\nRemove the ",
+            sQuote(basename(mask_dir)), " directory to start over.")
+    return(softmasked)
+  }
   dir.create(mask_dir)
-  
   # generate a temporary infile with capital letters
   tmp_f <- paste0(f, "~")
   system(paste("awk 'FNR == 1'", f, ">", tmp_f))

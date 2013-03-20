@@ -1,12 +1,10 @@
 #' @importFrom IRanges IRanges
-#' @importFrom IRanges IRangesList
-#' @importFrom IRanges subjectHits
-#' @importFrom IRanges findOverlaps
 #' @importFrom IRanges mapply
-#' @importFrom IRanges CharacterList
-#' @importFrom GenomicRanges unlist
+#' @importFrom IRanges start
+#' @importFrom IRanges end
+#' @importFrom IRanges shift
+#' @importFrom GenomicRanges strand
 NULL
-
 
 update_alignment_position <- function (cr, ghr, ahr) {
   rev <- strand(ghr) == "-"

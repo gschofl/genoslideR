@@ -64,15 +64,19 @@ header2map <- function (seq) {
   map <- lapply(map, `colnames<-`, value=c("chr", "genomic_start",
                                            "genomic_end", "strand"))
   for (i in seq_along(map)) {
-    map[[i]][,c("genomic_start")] <- as.integer(map[[i]][,c("genomic_start")])
-    map[[i]][,c("genomic_end")] <- as.integer(map[[i]][,c("genomic_end")])
+    map[[i]][["genomic_start"]] <-
+      suppressWarnings(as.integer(map[[i]][["genomic_start"]]))
+    map[[i]][["genomic_end"]] <-
+      suppressWarnings(as.integer(map[[i]][["genomic_end"]]))
+    map[[i]][["strand"]] <-
+      ifelse(map[[i]][["strand"]] == 'NA', '*', map[[i]][["strand"]])
   }
   
   genomicMap <- GRangesList(Map(function(g, cov, m) {
     seqinfo <- Seqinfo(g, as.integer(cov))
-    GRanges(seqnames=g, IRanges(start=m[["genomic_start"]],
-                                end=m[["genomic_end"]],
-                                names=m[["chr"]]),
+    GRanges(seqnames=g, map2range(name=m[["chr"]],
+                                  start=m[["genomic_start"]],
+                                  end=m[["genomic_end"]]),
             strand=m[["strand"]], seqinfo=seqinfo)
   }, g = as.list(genomes), cov = as.list(coverage), m = map))
   names(genomicMap) <- IRanges::Map(as.character%.%runValue, seqnames(genomicMap))
@@ -84,10 +88,19 @@ header2map <- function (seq) {
 }
 
 
+map2range <- function(name, start, end) {
+  width <- end - start + 1L
+  start <- ifelse(is.na(start), 1L, start)
+  width <- ifelse(is.na(width), 0L, width)
+  new("IRanges", start=start, width=width, NAMES=name)
+}
+
+
 update_position <- function (m, g) {
-  s <- 1
+  s <- 1L
   w <- m[["genomic_end"]] - m[["genomic_start"]] + 1L
-  mat <- matrix(rep(0, nrow(m)*2), ncol=2)
+  w <- ifelse(is.na(w), 0L, w)
+  mat <- matrix(rep(0L, nrow(m)*2), ncol=2)
   for (i in seq_len(nrow(mat))) {
     mat[i,1] <- s
     mat[i,2] <- w[i] + s - 1L

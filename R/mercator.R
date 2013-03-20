@@ -56,11 +56,11 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   
   annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
   
-  ## Debendencies BLAT
+  ## Check dependencies for BLAT
   hasDependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
                     "anchors2fa", "blat", "blat2hits"))
   
-  ## Debendencies mercator
+  ## Check dependencies for mercator
   hasDependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
                     "makeAlignmentInput",
                     "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
@@ -73,6 +73,20 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
     wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
                  strsplit(dirname(seq_files), .Platform$file.sep))
     wd <- normalizePath(paste(wd, collapse=.Platform$file.sep))
+  }
+  
+  if (!all(is_fasta(seq_files) | is_gbk(seq_files))) {
+    stop("Sequences must be provided in FASTA or GenBank format")
+  }
+  
+  ## Extract FASTA from GenBank files and reassign the gbk files as anno_files
+  ## if annotation = 'genbank' and anno_files = NULL
+  gbk_files <- which(is_gbk(seq_files))
+  if (length(gbk_files) > 0) {
+    if (annotation == 'genbank' && is.null(anno_files))
+      anno_files <- seq_files[gbk_files]
+    outdirs <- dirname(seq_files)
+    seq_files[gbk_files] <- gbk2fna(seq_files[gbk_files], outdirs[gbk_files])
   }
   
   # mask sequence files
@@ -116,10 +130,10 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
     dir.create(dir, recursive=TRUE)
   
   # generate mercator-readable gff files
-  gff_files <- gff_for_mercator(f=anno_files, type=annotation, wd)
+  gff_files <- gff_for_mercator(anno_files, annotation, merc_gff)
   
   # generate mercator-readable fasta files
-  fna_files <- fna_for_mercator(f=seq_files, wd)
+  fna_files <- fna_for_mercator(seq_files, merc_fas)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
   invisible(mapply(function(x, y)
@@ -143,20 +157,14 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
 
 
 gff_for_mercator <- function (f, type, wd) {
-  
   if (missing(wd)) {
     stop("No working directory provided")
   }
-  
-  type <- match.arg(type, c("gff", "ptt", "gbk", "ftable","glimmer3"))
-  
-  if (!file.exists(file.path(wd, ".mercator")))
-    stop("No '.mercator' directory available in ", wd)
-  
+  type <- match.arg(type, c("gff", "ptt", "genbank", "ftable","glimmer3"))
   out <- switch(type,
                 gff=gff2gff(f, wd),
                 ptt=ptt2gff(f, wd),
-                gbk=gbk2gff(f, wd),
+                genbank=gbk2gff(f, wd),
                 ftable=ftb2gff(f, wd),
                 glimmer3=glimmer2gff(f, wd))
   
@@ -165,10 +173,9 @@ gff_for_mercator <- function (f, type, wd) {
 
 
 gff2gff <- function (f, wd) {
-  outfiles <- character()
-  for (file in f) {
-    
-    l <- readLines(file)
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    l <- readLines(f[i])
     nlines <- -1L
     if (any(l == "##FASTA")) {
       nlines <- which(l == "##FASTA")[1L] - 1L
@@ -176,7 +183,7 @@ gff2gff <- function (f, wd) {
     rm(l) # free memory
     
     # load data frame
-    gff <- scan(file, nlines = nlines, sep = "\t", comment.char = "#", 
+    gff <- scan(f[i], nlines = nlines, sep = "\t", comment.char = "#", 
                 quote = "", quiet = TRUE, na.strings = '.',
                 what = list(seqid = character(),
                             source = character(),
@@ -190,7 +197,7 @@ gff2gff <- function (f, wd) {
     
     cds_idx <- which(gff$type == "CDS")
     len <- length(cds_idx)
-    seqid <- strip_ext(basename(file))
+    seqid <- strip_ext(basename(f[i]))
     gff <- data.frame(stringsAsFactors=FALSE,
                       seqid = rep(seqid, len), 
                       source = gff[["source"]][cds_idx],
@@ -201,7 +208,7 @@ gff2gff <- function (f, wd) {
                       strand = gff[["strand"]][cds_idx],
                       phase = rep("0", len),
                       attributes = gff[["attributes"]][cds_idx])
-    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
     write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
                 col.names=FALSE)
     outfiles <- c(outfiles, outfile)
@@ -214,9 +221,10 @@ gff2gff <- function (f, wd) {
 
 ptt2gff <- function (f, wd) {
   outfiles <- character()
-  for (file in f) {
-    skip <- sum(count.fields(file, sep="\t") < 9)
-    ptt <- scan(file, skip = skip + 1, quote="",
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    skip <- sum(count.fields(f[i], sep="\t") < 9)
+    ptt <- scan(f[i], skip = skip + 1, quote="",
                 quiet=TRUE, sep="\t",
                 what = list(Location = character(),
                             Strand = character(),
@@ -228,7 +236,7 @@ ptt2gff <- function (f, wd) {
                             COG = character(),
                             Product = character()))
     
-    seqid <- strip_ext(basename(file))
+    seqid <- strip_ext(basename(f[i]))
     loc <- strsplit(ptt[["Location"]], "..", fixed=TRUE)
     len <- length(loc)
     gff <- data.frame(stringsAsFactors=FALSE,
@@ -242,7 +250,7 @@ ptt2gff <- function (f, wd) {
                       phase = rep("0", len),
                       attributes = paste0("ID=cds", seq.int(0, len - 1),
                                           ";product=", ptt[["Product"]]))
-    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
     write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
                 col.names=FALSE)
     outfiles <- c(outfiles, outfile)
@@ -255,13 +263,14 @@ ptt2gff <- function (f, wd) {
 
 ftb2gff <- function (f, wd) {
   outfiles <- character()
-  for (file in f) {
-    l <- readLines(file, n=1)
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    l <- readLines(f[i], n=1)
     seqid <- strsplitN(l, split="\\s+", 2)
     m <- regexpr("[A-Za-z]{2}([A-Za-z_])?\\d+(\\.\\d)?", seqid)
     seqid <- strip_ext(regmatches(seqid, m))
     
-    ft <- scan(file, sep="\t", comment.char=">", quiet=TRUE,
+    ft <- scan(f[i], sep="\t", comment.char=">", quiet=TRUE,
                quote="", fill=TRUE,
                what=list(start = character(),
                          end = character(),
@@ -289,7 +298,7 @@ ftb2gff <- function (f, wd) {
                       strand = strand,
                       phase = rep("0", len),
                       attributes = paste0("ID=cds", seq.int(0, len - 1)))
-    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
     write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
                 col.names=FALSE)
     outfiles <- c(outfiles, outfile)
@@ -302,10 +311,39 @@ ftb2gff <- function (f, wd) {
 
 gbk2gff <- function (f, wd) {
   outfiles <- character()
-  for (file in f) {
-    #
-    #
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    gbk <- readLines(f[i])
+    seqid <- strsplit(gbk[1], split = "\\s+")[[1]][2]
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
+    features_start <- which(substr(gbk, 1, 8) == "FEATURES") + 1
+    features_end <- which(substr(gbk, 1, 6) == "ORIGIN") - 1 %||% length(gbk) - 1
+    features <- gbk[features_start:features_end]
+    cds_idx <- which(substr(features, 6, 8) == "CDS")
+    loc <- trim(strsplitN(features[cds_idx], "CDS", 2))
+    ## discard joins
+    loc <- grep("join", loc, value=TRUE, invert=TRUE)
+    strand <- ifelse(grepl("complement", loc), '-', '+')
+    loc <- strsplit(regmatches(loc, regexpr('<?\\d+\\.\\.>?\\d+', loc)),
+                    split="..", fixed=TRUE)
+    start <- gsub('<|>', '', vapply(loc, `[`, 1, FUN.VALUE=character(1)))
+    end <- gsub('<|>', '', vapply(loc, `[`, 2, FUN.VALUE=character(1)))
+    len <- length(loc)
+    gff <- data.frame(stringsAsFactors=FALSE,
+                      seqid = rep(seqid, len), 
+                      source = rep("genbank", len),
+                      type = rep("CDS", len),
+                      start = start,
+                      end = end,
+                      score = rep(".", len),
+                      strand = strand,
+                      phase = rep("0", len),
+                      attributes = paste0("ID=cds", seq.int(0, len - 1)))
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
+    write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
+                col.names=FALSE)
     outfiles <- c(outfiles, outfile)
+    rm(gbk,gff) ## free memory
   }
   
   return(invisible(outfiles))
@@ -314,15 +352,16 @@ gbk2gff <- function (f, wd) {
 
 glimmer2gff <- function (f, wd) {
   outfiles <- character()
-  for (file in f) {
-    glim <- scan(file, comment.char = ">", quote="",
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    glim <- scan(f[i], comment.char = ">", quote="",
                 quiet=TRUE, sep="",
                 what = list(id = character(),
                             start = integer(),
                             end = integer(),
                             frame = character(),
                             score = numeric()))
-    seqid <- strip_ext(basename(file))
+    seqid <- strip_ext(basename(f[i]))
     len <- length(glim[["id"]])
     dir <- glim[["end"]] > glim[["start"]]
     start <- ifelse(dir, glim[["start"]], glim[["end"]])
@@ -344,7 +383,7 @@ glimmer2gff <- function (f, wd) {
                                           ";frame=", glim[["frame"]],
                                           ";score=", glim[["score"]])[!idx])
     
-    outfile <- file.path(wd, ".mercator", "gff", paste0(seqid, ".gff"))
+    outfile <- file.path(wd[i], paste0(seqid, ".gff"))
     write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
                 col.names=FALSE)
     outfiles <- c(outfiles, outfile)
@@ -355,22 +394,16 @@ glimmer2gff <- function (f, wd) {
 
 
 fna_for_mercator <- function (f, wd) {
-  
   if (missing(wd)) {
     stop("No working directory provided")
   }
-  
-  type <- if (all(vapply(f, is_fasta, logical(1)))) {
+  type <- if (all(is_fasta(f))) {
     "fna"
-  } else if (all(vapply(f, is_gbk, logical(1)))) {
+  } else if (all(is_gbk(f))) {
     "gbk"
   } else {
     "other"
   }
-
-  if (!file.exists(file.path(wd, ".mercator")))
-    stop("No '.mercator' directory available in ", wd)
-
   out <- switch(type,
                 fna=fna2fna(f, wd),
                 gbk=gbk2fna(f, wd),
@@ -382,13 +415,15 @@ fna_for_mercator <- function (f, wd) {
 
 fna2fna <- function (f, wd) {
   outfiles <- character()
-  for (file in f) {
-    # replace first line in fasta
-    fna <- readLines(file)
-    seqid <- strip_ext(basename(file))
-    outfile <- file.path(wd, ".mercator", "fasta", paste0(seqid, ".fna"))
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    fna <- readLines(f[i])
+    seqid <- strip_ext(basename(f[i]))
+    outfile <- file.path(wd[i], paste0(seqid, ".fna"))
+    outcon <- file(outfile, open="w")
+    on.exit(close(outcon))
     fna[1] <- sprintf(">%s", seqid)
-    write(fna, file=outfile)
+    writeLines(fna, outcon)
     outfiles <- c(outfiles, outfile)
   }
   return(invisible(outfiles))
@@ -396,9 +431,26 @@ fna2fna <- function (f, wd) {
 
 
 gbk2fna <- function (f, wd) {
-  stop("Extraction of sequences from GBK files isn't implemented yet")
   outfiles <- character()
-  for (file in f) {
+  wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
+  for (i in seq_along(f)) {
+    gbk <- readLines(f[i])
+    seqid <- strsplit(gbk[1], split = "\\s+")[[1]][2]
+    header <- sprintf(">%s", seqid)
+    outfile <- file.path(wd[i], paste0(seqid, ".fna"))
+    outcon <- file(outfile, open="w")
+    writeLines(header, outcon)
+    ori_start <- which(substr(gbk, 1, 6) == "ORIGIN") + 1
+    ori_end <- which(substr(gbk, 1, 2) == "//") - 1
+    gbk <- gbk[seq.int(ori_start, ori_end)]
+    fna <- vapply(gbk, function(x) {
+      toupper(paste0(substr(x, 11, 20), substr(x, 22, 31),
+                     substr(x, 33, 42), substr(x, 44, 53),
+                     substr(x, 55, 64), substr(x, 66, 75),
+                     collapse = ""))
+    }, character(1), USE.NAMES = FALSE)
+    writeLines(fna, outcon)
+    close(outcon)
     outfiles <- c(outfiles, outfile)
   }
   return(invisible(outfiles))

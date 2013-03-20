@@ -5,11 +5,11 @@ find_gaps <- function(seq) {
     .Call('genoslideR_find_gaps', PACKAGE = 'genoslideR', seq)
 }
 
-make_ungapped_ranges <- function(start, end, nm, gaprange) {
-    .Call('genoslideR_make_ungapped_ranges', PACKAGE = 'genoslideR', start, end, nm, gaprange)
-}
-
 make_gapped_ranges <- function(start, end, gaprange) {
     .Call('genoslideR_make_gapped_ranges', PACKAGE = 'genoslideR', start, end, gaprange)
+}
+
+make_ungapped_ranges <- function(start, end, nm, gaprange) {
+    .Call('genoslideR_make_ungapped_ranges', PACKAGE = 'genoslideR', start, end, nm, gaprange)
 }
 

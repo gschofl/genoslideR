@@ -1,45 +1,34 @@
+#' @importFrom IRanges runValue
+#' @importFrom IRanges ranges
 #' @importFrom IRanges which
 #' @importFrom IRanges order
 #' @importFrom IRanges compact
 #' @importFrom IRanges subseq
-#' @importFrom IRanges mendoapply
-#' @importFrom IRanges ranges
 #' @importFrom IRanges split
-#' @importFrom IRanges runValue
+#' @importFrom IRanges findOverlaps
+#' @importFrom IRanges subjectHits
+#' @importFrom IRanges queryHits
 #' @importFrom GenomicRanges seqnames
-#' @importFrom Biostrings DNAStringSet
-#' @importFrom Biostrings xscat
+#' @importFrom GenomicRanges GRangesList
+#' @importFrom GenomicRanges GRanges
 NULL
 
 #' INTERNAL: Map a genomic range to the alignment
 #'
 #' @param range A \code{\linkS4class{Granges}} object.
-#' @param aln A \code{\linkS4class{AnnotatedAlignment}} object.
+#' @param gmap
+#' @param amap
+#' @param gaps
 #' 
 #' @keywords internal
-map2aln <- function (ranges, aln) {
-
-  mapping_ranges <- ranges(ranges)
-  genome <- unique(as.character(runValue(seqnames(ranges))))
-  if (length(genome) > 1) {
-    stop("Provide only one genome for mapping", call.=FALSE)
-  }
-  
-  if (is(mapping_ranges, "IRangesList")) {
-    mapping_ranges <- unlist(mapping_ranges)
-  }
-  
-  gmap <- gMap(aln)[[genome]]
-  amap <- aMap(aln)[[genome]]
-  gaps <- genoslideR::gaps(aln)[[genome]]
+map2aln <- function (ranges, gmap, amap, gaps) {
   map_min <- min(start(gmap))
   map_max <- max(end(gmap)) - map_min + 1L
-
-  ovl <- findOverlaps(mapping_ranges, ranges(gmap), type="any")
-  ovl_ranges <- ranges(ovl, mapping_ranges, ranges(gmap))
+  ovl <- findOverlaps(ranges, ranges(gmap), type="any")
+  ovl_ranges <- ranges(ovl, ranges, ranges(gmap))
   subject_hits <- subjectHits(ovl)
   query_hits <- queryHits(ovl)
-  cuts <- vector("list", length(mapping_ranges))
+  cuts <- vector("list", length(ranges))
   for (i in unique(query_hits)) {
     query <- which(query_hits == i)
     subject <- subject_hits[query]

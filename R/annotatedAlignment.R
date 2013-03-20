@@ -280,16 +280,24 @@ setMethod("type", "annotatedAlignment",
 #' @export
 setGeneric("gMap", function (x, ...) standardGeneric("gMap"))
 setMethod("gMap", "annotatedAlignment",
-          function (x) {
-            metadata(alignment(x))[["gMap"]]
+          function (x, compact =  FALSE) {
+            gmap <- metadata(alignment(x))[["gMap"]]
+            if (compact) {
+              gmap <- gmap[width(gmap) != 0, ]
+            }
+            gmap
           })
 
 
 #' @export
 setGeneric("aMap", function (x, ...) standardGeneric("aMap"))
 setMethod("aMap", "annotatedAlignment",
-          function (x) {
-            metadata(alignment(x))[["aMap"]]
+          function (x, compact =  FALSE) {
+            amap <- metadata(alignment(x))[["aMap"]]
+            if (compact) {
+              amap <- amap[width(amap) != 0, ]
+            }
+            amap
           })
 
 

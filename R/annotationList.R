@@ -50,10 +50,10 @@ setClass("annotationList", contains="GRangesList")
 
 annotationList <- function(files, type = "gff", ...) {
   
-  type <- match.arg(type, c("gff", "ptt", "ftb", "table"))
+  type <- match.arg(type, c("gff", "ptt", "ftb", "genbank", "table"))
   importer <- match.fun(paste0("import_annotation_from_", type))
   
-  if (type %in% c("gff", "ftable")) {
+  if (type %in% c("gff", "ftable", "genbank")) {
     # import_annotation_from_gff
     features <- list(...)[["features"]] %|null|% c("CDS", "RNA")
     anno <- GRangesList(lapply(files, importer, features=features))

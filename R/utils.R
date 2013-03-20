@@ -67,28 +67,38 @@ is_sliced_alignment <- function (aln) {
 }
 
 is_fasta <- function(f) {
-  l <- readLines(f, n=2)
-  grepl("^>", l[1]) && 
-    all(unique(strsplit(l[2], "")[[1]]) %in% c("A","T","G","C","a","t","g","c"))
+  l <- lapply(f, readLines, n=2)
+  vapply(l, function(l) {
+    grepl("^>", l[1]) && 
+      all(unique(strsplit(l[2], "")[[1]]) %in% c("A","T","G","C","a","t","g","c"))
+  }, logical(1))
 }
 
 is_gbk <- function(f) {
-  l <- readLines(f, n=2)
-  grepl("^LOCUS", l[1]) && grepl("^DEFINITION", l[2])
+  l <- lapply(f, readLines, n=2)
+  vapply(l, function(l) {
+    grepl("^LOCUS", l[1]) && grepl("^DEFINITION", l[2])
+  }, logical(1))
 }
 
 is_mfa <- function (f) {
-  l <- readLines(f, 1)
-  grepl("^>[[:graph:]]+ [[:graph:]]+:\\d+:\\d+:[+-]{1}", l)
+  l <- lapply(f, readLines, n=1)
+  vapply(l, function(l) {
+    grepl("^>[[:graph:]]+ [[:graph:]]+:\\d+:\\d+:[+-]{1}", l)
+  }, logical(1))
 }
 
 is_maf <- function (f) {
-  i <- 1
-  while (grepl("^#", readLines(f, i))) {
-    i <- i + 1
-  }
-  l <- readLines(f, i + 1)
-  grepl("^a", l[i]) && grepl("^s ", l[i+1])
+  l <- lapply(f, function(f) {
+    i <- 1
+    while (grepl("^#", readLines(f, i))) {
+      i <- i + 1
+    }
+    readLines(f, i + 1)
+  })
+  vapply(l, function(l) {
+    grepl("^a", l[i]) && grepl("^s ", l[i+1])
+  }, logical(1))
 }
 
 #' @importFrom rmisc hasCommand
@@ -102,3 +112,6 @@ hasDependencies <- function(cmd) {
   }
   invisible()
 }
+
+
+
