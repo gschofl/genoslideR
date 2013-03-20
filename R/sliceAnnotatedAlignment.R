@@ -132,7 +132,6 @@ genome2Genome <- function(ranges, aln, targetGenomes = NULL) {
 }
 
 
-
 #' Extract genomic ranges from an alignment.
 #' 
 #' @param ranges a \code{\linkS4class{GRanges}} object containing genomic
@@ -170,8 +169,6 @@ sliceAlignment <- function(ranges, aln, addAnnotations = TRUE, targetGenomes = N
   return(aln_slices)
 }
 
-# slcd=aln_slices[[1]]
-# aln=aa
 
 add_annotation <- function (aln_slices, aln, targetGenome, type = "any") {
   gaps <- genoslideR::gaps(aln)[targetGenomes]
@@ -184,14 +181,11 @@ add_annotation <- function (aln_slices, aln, targetGenome, type = "any") {
     mapped_ranges <- vector("list", length(mapping_ranges))
     for (i in seq_along(mapping_ranges)) {
       mapped_ranges[[i]] <- GRangesList(mapply(.aln2map,
-                                               
                                                ranges = mapping_ranges[i],
                                                gmap = gmap, amap = amap))
     }
     GRangesList(mapped_ranges)
-    
-    
-    
+
     gpos <- aln2map(ranges=apos, aln, genome=names(slcd))
     gpos <- split(gpos, seqnames(gpos))
     hitlist <- findOverlaps(ranges(gpos), ranges(aln), type=type)
