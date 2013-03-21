@@ -3,6 +3,7 @@
 #' @importFrom Biostrings xscat
 #' @importFrom Biostrings subseq
 #' @importFrom Biostrings reverse
+#' @importFrom Biostrings XStringSetList
 #' @importFrom rmisc %|null|%
 NULL
 
@@ -13,24 +14,23 @@ NULL
 #' @param aln A \code{\linkS4class{AnnotatedAlignment}} object.
 #' 
 #' @keywords internal
-slice_aln <- function (ranges, aln, targetGenomes = NULL) {
-  
-  targetGenomes <- targetGenomes %|null|% seqlevels(aa)
-  aln <- alignment(aa)[targetGenomes]
-  
-  mapply(.slice_aln, range=ranges, MoreArgs=list(aln = aln))
+sliceAlnRanges <- function (ranges, aln) {
+  metadata(aln) <- list()
+  listData <- mapply(.slicer, r=ranges, MoreArgs=list(aln = aln))
+  ans <- Biostrings:::XStringSetList("DNA", listData)
+  metadata(ans) <- list(alignment_positions = ranges)
+  ans
 }
 
 
-.slice_aln <- function(range, aln) {
-  dss <- mapply(subseq2, start = start(range), end = end(range),
-                strand = as.character(strand(range)), MoreArgs=list(x = aln))
-  if (length(cut) == 1) {
+.slicer <- function(r, aln) {
+  dss <- mapply(subseq2, start = start(r), end = end(r),
+                strand = as.character(strand(r)), MoreArgs=list(x = aln))
+  if (length(dss) == 1) {
     dss <- IRanges::compact(dss[[1]])
   } else {
     dss <- IRanges::compact(setNames(do.call(xscat, dss), nm=names(dss[[1]])))
   }
-  metadata(dss) <- list(alignment_position = range)
   dss
 }
 
