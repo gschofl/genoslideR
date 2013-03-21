@@ -12,7 +12,7 @@ NULL
 #' @return A \code{\linkS4class{GRanges}} or \code{\linkS4class{GRangesList}}
 #' object.
 #' @export
-genome2Alignment <- function(ranges, aln, simplify = TRUE) {
+genome2Alignment <- function(ranges, aln, simplify = FALSE) {
   
   if (missing(ranges) || !(is(ranges, "GRanges") || is(ranges, "GRangesList"))) {
     stop("Provide 'GRanges' or 'GRangesList' to map genomic positions to an alignment.",
@@ -37,7 +37,7 @@ genome2Alignment <- function(ranges, aln, simplify = TRUE) {
   amap <- aMap(aln, compact = TRUE)[[genome]]
   gaps <- genoslideR::gaps(aln)[[genome]]
   names <- names(ranges)
-  alnrange <- map2aln(mapping_ranges, gmap, amap, gaps)
+  alnrange <- map2aln(ranges=mapping_ranges, gmap, amap, gaps)
   names(alnrange) <- names
   if (simplify)
     alnrange <- unlist(alnrange)
@@ -53,7 +53,7 @@ genome2Alignment <- function(ranges, aln, simplify = TRUE) {
 #' @param targetGenomes
 #' @return A \code{\linkS4class{GRangesList}} object.
 #' @export
-alignment2Genome <- function(ranges, aln, targetGenomes = NULL) {
+alignment2Genome <- function (ranges, aln, targetGenomes = NULL) {
   
   if (missing(ranges)) {
     stop("Provide 'IRanges' or 'GRanges' to map alignment positions to the genomes." )
@@ -86,7 +86,6 @@ alignment2Genome <- function(ranges, aln, targetGenomes = NULL) {
 }
 
 
-
 #' Map genomic positions in one genome to genomic positions in other genomes.
 #' 
 #' @param ranges a \code{\linkS4class{GRanges}} object containing alignment
@@ -95,7 +94,7 @@ alignment2Genome <- function(ranges, aln, targetGenomes = NULL) {
 #' @param targetGenomes
 #' @return A \code{\linkS4class{GRangesList}} object.
 #' @export
-genome2Genome <- function(ranges, aln, targetGenomes = NULL) {
+genome2Genome <- function (ranges, aln, targetGenomes = NULL) {
   
   if (missing(ranges) || !(is(ranges, "GRanges") || is(ranges, "GRangesList"))) {
     stop("Provide 'GRanges' or 'GRangesList' to map genomic positions.",
@@ -112,7 +111,7 @@ genome2Genome <- function(ranges, aln, targetGenomes = NULL) {
     stop("Provide only one genome for mapping", call.=FALSE)
   }
   
-  if (is(mapping_ranges, "IRangesList")) {
+  if (is(mapping_ranges, "GRangesList")) {
     mapping_ranges <- unlist(mapping_ranges)
   }
   
@@ -132,19 +131,24 @@ genome2Genome <- function(ranges, aln, targetGenomes = NULL) {
 }
 
 
-#' Extract genomic ranges from an alignment.
+#' Slice genomic ranges from an alignment.
 #' 
-#' @param ranges a \code{\linkS4class{GRanges}} object containing genomic
+#' The ranges passed to \code{sliceAlignment} are first converted
+#' from genomic ranges to alignment ranges. The alignment ranges
+#' are returned as metadata with the resulting
+#' \code{\linkS4Class{DNAStringSetList}} object.
+#' 
+#' @param ranges a \code{\linkS4class{GRanges}} or
+#' \code{\linkS4class{GRangesList}} containing genomic
 #' positions to be mapped to the alignment.
 #' @param aln an \code{\linkS4class{annotatedAlignment}} instance.
-#' @param addAnnotations
 #' @param targetGenomes
-#' @return A \code{\linkS4class{GRangesList}} object.
+#' @return A \code{\linkS4class{DNAStringSetList}} object.
 #' @export
-sliceAlignment <- function(ranges, aln, addAnnotations = TRUE, targetGenomes = NULL) {
+sliceAlignment <- function (ranges, aln, targetGenomes = NULL) {
   
   if (missing(ranges) || !(is(ranges, "GRanges") || is(ranges, "GRangesList"))) {
-    stop("Provide a 'GRanges' or 'GRangesList' to map genomic positions to the alignment",
+    stop("Provide a 'GRanges' or 'GRangesList' to slice an alignment",
          call.=FALSE)
   }
   
@@ -152,28 +156,40 @@ sliceAlignment <- function(ranges, aln, addAnnotations = TRUE, targetGenomes = N
     stop("Provide an 'annotatedAlignment' to map genomic positions to the alignment")
   }
   
-  aln_ranges <- map2aln(ranges, aln)
-  aln_slices <- slice_aln(ranges=aln_ranges, aln, targetGenomes = targetGenomes)  
-  for (i in seq_along(aln_slices)) {
-    rev <- which(strand(metadata(aln_slices[[i]])[["alignment_position"]]) == "-")
-    aln_slices[rev] <- lapply(aln_slices[rev], function (slcd) {
-      reverseComplement(as(slcd, "DNAStringSet"))
-    })
+  genome <- unique(as.character(runValue(seqnames(ranges))))
+  if (length(genome) > 1) {
+    stop("Provide only one genome for mapping", call.=FALSE)
   }
-
-  if (addAnnotations) {
-    aln_slices <- add_annotation(aln_slices, aln, type="any",
-                                 targetGenomes = targetGenomes)
+  
+  mapping_ranges <- ranges(ranges)
+  if (is(mapping_ranges, "IRangesList")) {
+    mapping_ranges <- unlist(mapping_ranges)
   }
-    
-  return(aln_slices)
+  
+  targetGenomes <- targetGenomes %|null|% seqlevels(aln)
+  gmap <- gMap(aln, compact = TRUE)[[genome]]
+  amap <- aMap(aln, compact = TRUE)[[genome]]
+  gaps <- genoslideR::gaps(aln)[[genome]]
+  aln <- alignment(aln)[targetGenomes]
+  names <- names(mapping_ranges)
+  alnranges <- map2aln(mapping_ranges, gmap, amap, gaps)
+  names(alnranges) <- names
+  sliceAlnRanges(alnranges, aln)
 }
 
 
-add_annotation <- function (aln_slices, aln, targetGenome, type = "any") {
+#' Map alignment positions to annotations.
+#' 
+#' @param ranges a \code{\linkS4class{GRanges}} object containing alignment
+#' positions.
+#' @param aln an \code{\linkS4class{annotatedAlignment}} instance.
+#' @param targetGenomes
+#' @return A \code{\linkS4class{GRangesList}} object.
+#' @export
+alignment2Annotation <- function (ranges, aln, targetGenome, type = "any") {
   gaps <- genoslideR::gaps(aln)[targetGenomes]
-  gmap <- gMap(aln)[targetGenomes]
-  amap <- aMap(aln)[targetGenomes]
+  gmap <- gMap(aln, compact = TRUE)[targetGenomes]
+  amap <- aMap(aln, compact = TRUE)[targetGenomes]
   
   aa <- lapply(aln_slices, function (slcd) {
     apos <- ranges(metadata(slcd)[["alignment_position"]])

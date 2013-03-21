@@ -2,7 +2,7 @@
 \alias{genome2Alignment}
 \title{Map genomic positions to alignment positions.}
 \usage{
-  genome2Alignment(ranges, aln, simplify = TRUE)
+  genome2Alignment(ranges, aln, simplify = FALSE)
 }
 \arguments{
   \item{ranges}{a \code{\linkS4class{GRanges}} object
