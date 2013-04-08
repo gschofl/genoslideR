@@ -47,11 +47,17 @@ that can be aligned using FSA}
   format, a file named \sQuote{map}, and a file named
   \sQuote{genomes}.
 
-  \code{mercator} segements can be aligned using
-  \code{\link{alignMercatorSegments}}, merged into a single
-  multi-fasta alignment file using
+  \code{mercator} segements can be aligned using the
+  \code{\link{alignSegments}} function, merged into a
+  single multi-fasta alignment file and imported into R as
+  a \code{\linkS4class{DNAStringSet}} using
   \code{\link{importAlignment}} or imported to R as an
   \code{\linkS4class{annotatedAlignment}} using
+  \code{\link{annotatedAlignment}}.
+}
+\seealso{
+  \code{\link{alignSegments}},
+  \code{\link{importAlignment},
   \code{\link{annotatedAlignment}}.
 }
 

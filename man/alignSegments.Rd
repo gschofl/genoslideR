@@ -24,4 +24,7 @@
 \description{
   Align orthologous genome segments with \code{fsa}
 }
+\seealso{
+  \code{\link{mercator}}, \code{\link{annotatedAlignment}}.
+}
 

@@ -6,7 +6,7 @@
 #' @param ... Named values interpreted as options for fsa.
 #' @param skip.completed if \code{TRUE}, don't realign an existing alignment.
 #' @param ncores Number of cores to utilised for parallelisation
-#' 
+#' @seealso \code{\link{mercator}}, \code{\link{annotatedAlignment}}.
 #' @export
 alignSegments <- function (seg_dir,
                            fsa.opts = list(anchored = TRUE,
@@ -29,7 +29,7 @@ alignSegments <- function (seg_dir,
                                  skip.completed=skip.completed,
                                  fsa.opts=fsa.opts, ncores=ncores)
 
-  message("Pass the path to the aligned mercator segments to the 'annotatedAlignment()' constructor to create an 'annotatedAlignment' object")
+  message("Pass the path to mercator segments to the 'annotatedAlignment()' constructor to create an 'annotatedAlignment' object")
   return(invisible(NULL))
 }
 
@@ -53,11 +53,9 @@ is_segments_dir <- function (dir) {
 
 segments_dir <- function (dir) {
   dir <- rmisc::trim(dir, paste0(.Platform$file.sep, "$"))
-  dir <- if (split_path(dir) == "segments")
-    dir
+  if (split_path(dir) == "segments")
+    return(normalizePath(dir))
   else
-    file.path(dir, "segments")
-  
-  return(dir)
+    return(normalizePath(file.path(dir, "segments")))
 }
 

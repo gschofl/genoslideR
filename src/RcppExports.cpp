@@ -40,3 +40,29 @@ BEGIN_RCPP
     return Rcpp::wrap(__result);
 END_RCPP
 }
+// update_genomic_position_cpp
+void update_genomic_position_cpp(Rcpp::S4 cut_ranges, Rcpp::S4 genomic_hit_ranges, Rcpp::S4 alignment_hit_ranges, Rcpp::IntegerVector strand);
+RcppExport SEXP genoslideR_update_genomic_position_cpp(SEXP cut_rangesSEXP, SEXP genomic_hit_rangesSEXP, SEXP alignment_hit_rangesSEXP, SEXP strandSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope __rngScope;
+    Rcpp::S4 cut_ranges = Rcpp::as<Rcpp::S4 >(cut_rangesSEXP);
+    Rcpp::S4 genomic_hit_ranges = Rcpp::as<Rcpp::S4 >(genomic_hit_rangesSEXP);
+    Rcpp::S4 alignment_hit_ranges = Rcpp::as<Rcpp::S4 >(alignment_hit_rangesSEXP);
+    Rcpp::IntegerVector strand = Rcpp::as<Rcpp::IntegerVector >(strandSEXP);
+    update_genomic_position_cpp(cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand);
+    return R_NilValue;
+END_RCPP
+}
+// update_alignment_position_cpp
+void update_alignment_position_cpp(Rcpp::S4 cut_ranges, Rcpp::S4 genomic_hit_ranges, Rcpp::S4 alignment_hit_ranges, Rcpp::IntegerVector strand);
+RcppExport SEXP genoslideR_update_alignment_position_cpp(SEXP cut_rangesSEXP, SEXP genomic_hit_rangesSEXP, SEXP alignment_hit_rangesSEXP, SEXP strandSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope __rngScope;
+    Rcpp::S4 cut_ranges = Rcpp::as<Rcpp::S4 >(cut_rangesSEXP);
+    Rcpp::S4 genomic_hit_ranges = Rcpp::as<Rcpp::S4 >(genomic_hit_rangesSEXP);
+    Rcpp::S4 alignment_hit_ranges = Rcpp::as<Rcpp::S4 >(alignment_hit_rangesSEXP);
+    Rcpp::IntegerVector strand = Rcpp::as<Rcpp::IntegerVector >(strandSEXP);
+    update_alignment_position_cpp(cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand);
+    return R_NilValue;
+END_RCPP
+}

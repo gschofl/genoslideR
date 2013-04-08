@@ -1,13 +1,13 @@
-\name{alignment2Genome}
-\alias{alignment2Genome}
-\title{Map alignment positions to genomic positions.}
+\name{findAnnotation}
+\alias{findAnnotation}
+\title{Find annotation associated with alignment positions.}
 \usage{
-  alignment2Genome(ranges, aln, targetGenomes = NULL)
+  findAnnotation(ranges, aln, targetGenomes = NULL)
 }
 \arguments{
   \item{ranges}{a \code{\linkS4class{GRanges}} or
   \code{\linkS4class{GRangesList}} containing alignment
-  positions to map to the \code{targetGenomes}.}
+  positions.}
 
   \item{aln}{an \code{\linkS4class{annotatedAlignment}}
   instance.}
@@ -15,15 +15,15 @@
   \item{targetGenomes}{a character vector of genome names.}
 }
 \value{
-  A \code{\linkS4class{GRangesList}} object.
+  A list of \code{\linkS4class{AnnotationList}} objects.
 }
 \description{
-  Map alignment positions to genomic positions.
+  Find annotation associated with alignment positions.
 }
 \seealso{
+  \code{\link{alignment2Genome}},
   \code{\link{genome2Alignment}},
   \code{\link{genome2Genome}},
-  \code{\link{sliceAlignment}},
-  \code{\link{findAnnotation}}.
+  \code{\link{sliceAlignment}}.
 }
 

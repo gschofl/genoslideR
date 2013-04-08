@@ -1,0 +1,26 @@
+\name{importAnnotation}
+\alias{importAnnotation}
+\title{Import annotation information into \code{GRanges}.}
+\usage{
+  importAnnotation(annopath, type = "gff", ...)
+}
+\arguments{
+  \item{annopath}{Path to annotation files.}
+
+  \item{type}{Type of annotation. Supported file types are
+  \emph{gff}, \emph{ptt}, \emph{ftb} (NCBI feature table),
+  \emph{genbank}/\emph{gbk}, and \emph{table} (custom
+  tab-delimted annotation files, minimally containing
+  \emph{start} and \emph{end} values).}
+
+  \item{...}{Optionally \code{features} (default: CDS,
+  RNA), \code{seqid} (sequence identifier, e.g. NCBI
+  accession numbers), and \code{sep}.}
+}
+\value{
+  a \code{\linkS4class{GRangesList}} object.
+}
+\description{
+  Import annotation information into \code{GRanges}.
+}
+

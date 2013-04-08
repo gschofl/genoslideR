@@ -11,59 +11,63 @@
 NULL
 
 
-aln2map <- function (ranges, gmap, amap, gaps) {
-  mapping_ranges <- mapply(ungap_alignment_position, cr=ranges, MoreArgs=list(gaps = gaps))
-  mapped_ranges <- vector("list", length(mapping_ranges))
-  for (i in seq_along(mapping_ranges)) {
-    mapped_ranges[[i]] <- 
-      unlist(GRangesList(mapply(.aln2map, ranges=mapping_ranges[[i]],
-                                gmap=gmap, amap=amap)))
+#' [INTERNAL] Map a alignment ranges to genomes
+#'
+#' @param ranges An IRangesList instance
+#' @param gmap A GrangesList instance.
+#' @param amap A GrangesList instance.
+#' @param gaps A GrangesList instance.
+#' @param normalize Normalize ovelapping query ranges.
+#' @return A GrangesList instance. 
+#' 
+#' @keywords internal
+aln2map <- function (ranges, gmap, amap, gaps, normalize = FALSE) {
+  ar <- unlist(ranges)
+  if (is.null(names(ar))) {
+    names(ar) <- rep(seq_along(ranges), width(ranges@partitioning)) 
+  } 
+  mapping_ranges <- IRangesList(ungap_alignment_position(ar, gaps))
+  if (normalize) {
+    mapping_ranges <- lapply(mapping_ranges, as, "NormalIRanges")
+    mapping_ranges <- IRangesList(lapply(mapping_ranges, as, "IRanges"))
   }
-  GRangesList(mapped_ranges)
+#   i <- 8
+#   x <- .aln2map(mr=mapping_ranges[[i]], gm=gmap[[i]], am=amap[[i]])
+#   x
+  GRangesList(mapply(.aln2map, mr = mapping_ranges, gm = gmap, am = amap))
 }
 
-#.aln2map(ranges=mapping_ranges[[i]][[1]], gmap=gmap[[1]], amap=amap[[1]])
+
 
 
 ungap_alignment_position <- function (cr, gaps) {
-  gaps <- ranges(gaps)
+  gaprange <- ranges(gaps)
   start <- start(cr)
   end <- end(cr)
-  nm <- names(cr) %|null|% rep("", length(start))
-  IRangesList(lapply(gaps, make_ungapped_ranges,
-                     start = start, end = end, nm = nm))
+  nm <- names(cr) %|null|% rep("", length(cr))
+  lapply(gaprange, make_ungapped_ranges, start = start, end = end, nm = nm)
 }
 
 
-.aln2map <- function(ranges, gmap, amap) {
-  ovl <- findOverlaps(ranges, ranges(amap), type="any")
-  ovl_ranges <- ranges(ovl, ranges, ranges(amap))
-  names(ovl_ranges) <- rep(unique(names(ranges)), length(ovl_ranges))
-  subject_hits <- subjectHits(ovl)
+## mr : mapping ranges
+## gr : genomic map
+## am : alignment map
+.aln2map <- function(mr, gm, am) {
+  if (length(mr) == 0 || all(width(mr) == 0))  
+    return(GRanges(runValue(seqnames(gm)), IRanges(1, width=0, names=""), "*"))
 
-  if (length(ranges) == 1) {
-    ahr <- amap[subject_hits, ]
-    ghr <- gmap[subject_hits, ]
-    cr <- ghr
-    ranges(cr) <- ovl_ranges
-    cuts <- update_alignment_position(cr, ghr, ahr)
-    return( cuts )
-  } else {
-    query_hits <- queryHits(ovl)
-    cuts <- vector("list", length(ranges))
-    for (i in unique(query_hits)) {
-      query <- which(query_hits == i)
-      subject <- subject_hits[query]
-      o <- order(start(amap)[subject])
-      query_order <- query[o]
-      subject_order <- subject[o]
-      ahr <- amap[subject_order, ]
-      ghr <- gmap[subject_order, ]
-      cr <- ghr
-      ranges(cr) <- ovl_ranges[query_order, ]
-      cuts[i] <- update_alignment_position(cr, ghr, ahr)
-    } 
-    return( unlist(GRangesList(cuts)) )
-  }
+  ar <- ranges(am)
+  ovl <- findOverlaps(mr, ar, type="any")
+  query_hits <- queryHits(ovl)
+  subject_hits <- subjectHits(ovl)
+  ovl_ranges <- ranges(ovl, mr, ar)
+  names(ovl_ranges) <- names(mr)[query_hits]
+  genomic_hits <- gm[subject_hits, ]
+  gh_ranges <- ranges(genomic_hits)
+  gh_strand <- as.integer(strand(genomic_hits))
+  ah_ranges <- ar[subject_hits, ]
+  update_alignment_position_cpp(ovl_ranges, gh_ranges, ah_ranges, gh_strand)
+  ranges(genomic_hits) <- ovl_ranges
+  genomic_hits
 }
 

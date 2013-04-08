@@ -5,35 +5,31 @@
 #' @importFrom biofiles definition
 NULL
 
-#' annotatedAlignment
+#' Construct an \sQuote{annotatedAlignment}.
 #' 
 #' \dQuote{annotatedAlignment} is an S4 class that provides a container for
-#' multiple alignments stored as an \dQuote{\linkS4class{XStringSet}} and
-#' genomic annotations stored as an \dQuote{\linkS4class{annotationList}}.
-#'
+#' multiple alignments stored as an \dQuote{\linkS4class{XStringSet}} object
+#' and genomic annotations stored as an \dQuote{\linkS4class{annotationList}}
+#' object.
 #' @export
 setClass("annotatedAlignment",
          representation(annotation="annotationList",
                         alignment="XStringSet"))
 
 
-#' Construct an annotated alignment
-#' 
-#' @param aln Path to a directory containing mercator segments,
+#' @param alnpath Path to a directory containing mercator segments,
 #' a single file in mfa (multi fasta) or maf (multiple alignment file)
 #' format containing the genome aligment.
-#' @param anno Paths to annotation files.
-#' @param type Type of annotation files.
-#' @param ... seqid (accession numbers)
-#' 
+#' @inheritParams importAnnotation
+#' @seealso \code{\link{mercator}}, \code{\link{alignSegments}}.
 #' @export
-annotatedAlignment <- function (aln, anno, type, ...) {
+annotatedAlignment <- function (alnpath, annopath, type, ...) {
   
-  if (missing(aln)) {
+  if (missing(alnpath)) {
     stop("No alignment provided")
   }
 
-  if (missing(anno)) {
+  if (missing(annopath)) {
     stop("No annotation provided")
   }
   
@@ -41,21 +37,21 @@ annotatedAlignment <- function (aln, anno, type, ...) {
     stop("No annotation type provided")
   }
   
-  if(!is_mapped_alignment(aln)) {
-    alignment <- importAlignment(aln)
+  if(!is_mapped_alignment(alnpath)) {
+    alignment <- importAlignment(alnpath)
   }
   
   genomes <- names(alignment)
   alignment <- alignment[order(genomes)]
-  genome_annotations <- strip_ext(basename(anno))
+  genome_annotations <- strip_ext(basename(annopath))
   
   idx <- genomes %in% genome_annotations
   if (all(idx == FALSE)) {
     stop("The annotation file names don't match with the genome names in the alignment")
   }
   
-  anno <- anno[idx][order(genome_annotations[idx])]
-  annotation <- annotationList(files=anno, type, ...)
+  annopath <- annopath[idx][order(genome_annotations[idx])]
+  annotation <- annotationList(annopath, type, ...)
   
   new("annotatedAlignment", annotation = annotation, alignment = alignment)
 }
@@ -271,6 +267,8 @@ setMethod("proteinID", "annotatedAlignment",
           })
 
 
+#' @export
+setGeneric("type", function (x, ...) standardGeneric("type"))
 setMethod("type", "annotatedAlignment",
           function (x) {
             type(annotation(x))

@@ -1,0 +1,25 @@
+\name{aln2map}
+\alias{aln2map}
+\title{[INTERNAL] Map a alignment ranges to genomes}
+\usage{
+  aln2map(ranges, gmap, amap, gaps, normalize = FALSE)
+}
+\arguments{
+  \item{ranges}{An IRangesList instance}
+
+  \item{gmap}{A GrangesList instance.}
+
+  \item{amap}{A GrangesList instance.}
+
+  \item{gaps}{A GrangesList instance.}
+
+  \item{normalize}{Normalize ovelapping query ranges.}
+}
+\value{
+  A GrangesList instance.
+}
+\description{
+  [INTERNAL] Map a alignment ranges to genomes
+}
+\keyword{internal}
+

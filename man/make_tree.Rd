@@ -1,6 +1,6 @@
 \name{make_tree}
 \alias{make_tree}
-\title{conctruct NJ or BIONJ tree from one or more multi-FASTA files}
+\title{[INTERNAL] conctruct NJ or BIONJ tree from one or more multi-fasta files}
 \usage{
   make_tree(fna_dir, align = "muscle", dist.model = "K80",
     tree = "bionj")
@@ -16,7 +16,8 @@
   \item{tree}{One of 'nj', 'bionj', or 'fastme'.}
 }
 \description{
-  conctruct NJ or BIONJ tree from one or more multi-FASTA
-  files
+  [INTERNAL] conctruct NJ or BIONJ tree from one or more
+  multi-fasta files
 }
+\keyword{internal}
 
