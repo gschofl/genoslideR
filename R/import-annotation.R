@@ -21,7 +21,59 @@
 #' @importFrom GenomicRanges mcols<-
 NULL
 
-import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
+
+#' Import annotation information into \code{GRanges}.
+#' 
+#' @param annopath Path to annotation files.
+#' @param type Type of annotation. Supported file types are \emph{gff},
+#' \emph{ptt}, \emph{ftb} (NCBI feature table), \emph{genbank}/\emph{gbk},
+#' and \emph{table} (custom tab-delimted annotation files, minimally containing
+#' \emph{start} and \emph{end} values).
+#' @param ... Optionally \code{features} (default: CDS, RNA), \code{seqid}
+#' (sequence identifier, e.g. NCBI accession numbers), and \code{sep}.
+#' @return a \code{\linkS4class{GRangesList}} object.
+#' @export
+importAnnotation <- function(annopath, type = "gff", ...) {
+  
+  type <- match.arg(type, c("gff", "ptt", "ftb", "genbank", "gbk", "table"))
+  importer <- match.fun(paste0("import_annotation_from_", type))
+  
+  if (type %in% c("gff", "ftable", "genbank", "gbk")) {
+    features <- list(...)[["features"]] %|null|% c("CDS", "RNA")
+    anno <- GRangesList(lapply(annopath, importer, features=features))
+    names(anno) <- seqnames(seqinfo(anno))
+  }
+  
+  if (type == "ptt") {
+    if (is.null(seqid <- list(...)[["seqid"]])) {
+      anno <- GRangesList(lapply(annopath, importer))
+    } else {
+      if (length(seqid) != length(annopath))
+        stop("Provide as many sequence identifiers (accession numbers) as annotation files")
+      anno <- GRangesList(mapply(importer, file=annopath, seqid=seqid,
+                                 SIMPLIFY=FALSE, USE.NAMES=FALSE))
+    }
+    names(anno) <- seqnames(seqinfo(anno))
+  }
+  
+  if (type == "table") {
+    if (is.null(seqid <- list(...)[["seqid"]])) {
+      stop("Provide sequence identifiers (accession numbers) for the annotation files.")
+    } else {
+      if (length(seqid) != length(annopath))
+        stop("Provide as many sequence identifiers as annotation files")
+      sep <- list(...)[["sep"]] %||% "\t"
+      anno <- GRangesList(mapply(importer, file=annopath, seqid=seqid,
+                                 sep=sep, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+    }
+    names(anno) <- seqnames(seqinfo(anno))
+  } 
+  
+  anno
+}
+
+
+import_annotation_from_ptt <- function(file, seqid = NULL) {
   
   skip <- sum(count.fields(file, sep="\t") < 9)
   ptt <- scan(file, skip = skip + 1, quote="",
@@ -66,13 +118,13 @@ import_annotation_from_ptt <- function(file = anno[1], seqid = NULL) {
     }
   }
   
-  create_GRanges(seqid, start, width, strand, names,
+  create.GRanges(seqid, start, width, strand, names,
                  type = type, gene = gene, synonym = synonym,
                  geneID = geneID, proteinID = proteinID, product = product)
 }
 
 
-import_annotation_from_tbl <- function(file = files[2], seqid = NULL, sep="\t") {
+import_annotation_from_table <- function(file, seqid = NULL, sep="\t") {
   
   header <- unlist(strsplit(readLines(file, n =  1), sep))
   if (all(c("start", "end") %ni% header)) {
@@ -98,7 +150,7 @@ import_annotation_from_tbl <- function(file = files[2], seqid = NULL, sep="\t") 
     table[["names"]] <- NULL
   }
   
-  create_GRanges(seqid, start, width, strand, names, table)
+  create.GRanges(seqid, start, width, strand, names, table)
 }
 
 
@@ -145,14 +197,13 @@ import_annotation_from_ftb <- function(file) {
     type[i] <- ft[["key"]][j][which(nzchar(ft[["key"]][j]))[1]]
   }
   
-  create_GRanges(seqid, start, width, strand, names,
+  create.GRanges(seqid, start, width, strand, names,
                  type = type, gene = gene, synonym = synonym,
                  geneID = geneID, proteinID = proteinID, product = product)
 }
 
 
-import_annotation_from_gff <- function(file = files[1],
-                                       features = c("CDS", "RNA")) {
+import_annotation_from_gff <- function(file, features = c("CDS", "RNA")) {
   
   l <- readLines(file)
   nlines <- -1L
@@ -225,7 +276,7 @@ import_annotation_from_gff <- function(file = files[1],
   synonym <- vapply(p_attr, "[", "locus_tag", FUN.VALUE=character(1))
   gene <- vapply(p_attr, "[", "gene", FUN.VALUE=character(1))
  
-  create_GRanges(seqid, start, width, strand, names,
+  create.GRanges(seqid, start, width, strand, names,
                  type = type, gene = gene, synonym = synonym,
                  geneID = geneID, proteinID = proteinID, product = product)
 }
@@ -261,9 +312,9 @@ parse_attr <- function (anno) {
 }
 
 
-import_annotation_from_genbank <- function(file = files[1],
-                                           features = c("CDS", "RNA")) {
+import_annotation_from_genbank <- function(file, features = c("CDS", "RNA")) {
   qualifiers <- c("gene", "locus_tag", "db_xref:geneID", "protein_id", "product")
+  message("Processing ", sQuote(basename(file)))
   gbk <- suppressMessages(gbRecord(file, with_sequence=FALSE))
   on.exit(unlink(gbk@dir, recursive=TRUE))
   f_list <- biofiles::select(gbk, key=features)
@@ -275,7 +326,11 @@ import_annotation_from_genbank <- function(file = files[1],
 }
 
 
-create_GRanges <- function (seqid, start, width, strand, names, ...) {
+# synonym
+import_annotation_from_gbk <- import_annotation_from_genbank
+
+
+create.GRanges <- function (seqid, start, width, strand, names, ...) {
   
   seqinfo <- tryCatch({
     x <- docsum(esummary(esearch(seqid, "nuccore")))
@@ -290,5 +345,4 @@ create_GRanges <- function (seqid, start, width, strand, names, ...) {
           ranges=IRanges(start = start, width = width, names = names),
           strand=Rle(strand), ..., seqinfo = seqinfo) 
 }
-
 

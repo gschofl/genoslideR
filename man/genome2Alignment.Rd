@@ -5,21 +5,26 @@
   genome2Alignment(ranges, aln, simplify = FALSE)
 }
 \arguments{
-  \item{ranges}{a \code{\linkS4class{GRanges}} object
-  containing genomic positions to be mapped to the
-  alignment.}
+  \item{ranges}{a \code{\linkS4class{GRanges}} or
+  \code{\linkS4class{GRangesList}} containing genomic
+  positions to map to the alignment.}
 
   \item{aln}{an \code{\linkS4class{annotatedAlignment}}
   instance.}
 
-  \item{simplify}{if \code{TRUE}, return a \code{GRanges}
-  instance.}
+  \item{simplify}{if \code{TRUE}, return \code{GRanges},
+  otherwise return a \code{GRangesList}.}
 }
 \value{
-  A \code{\linkS4class{GRanges}} or
-  \code{\linkS4class{GRangesList}} object.
+  A \code{\linkS4class{GRangesList}} object. object.
 }
 \description{
   Map genomic positions to alignment positions.
+}
+\seealso{
+  \code{\link{alignment2Genome}},
+  \code{\link{genome2Genome}},
+  \code{\link{sliceAlignment}},
+  \code{\link{findAnnotation}}.
 }
 

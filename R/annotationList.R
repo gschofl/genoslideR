@@ -39,53 +39,20 @@
 #' @importFrom biofiles qualif
 NULL
 
-#' annotationList
+#' Construct an \dQuote{annotationList}.
 #' 
 #' \dQuote{annotationList} is an S4 class that provides a container for
-#' genomic annotations stored in \dQuote{\linkS4class{gbRange}}s.
+#' genomic annotations stored in \dQuote{\linkS4class{GRanges}}.
 #'
 #' @export
 setClass("annotationList", contains="GRangesList")
 
 
-annotationList <- function(files, type = "gff", ...) {
-  
-  type <- match.arg(type, c("gff", "ptt", "ftb", "genbank", "table"))
-  importer <- match.fun(paste0("import_annotation_from_", type))
-  
-  if (type %in% c("gff", "ftable", "genbank")) {
-    # import_annotation_from_gff
-    features <- list(...)[["features"]] %|null|% c("CDS", "RNA")
-    anno <- GRangesList(lapply(files, importer, features=features))
-    names(anno) <- seqnames(seqinfo(anno))
-  }
-  
-  if (type == "ptt") {
-    if (is.null(seqid <- list(...)[["seqid"]])) {
-      anno <- GRangesList(lapply(files, importer))
-    } else {
-      if (length(seqid) != length(files))
-        stop("Provide as many sequence identifiers (accession numbers) as annotation files")
-      anno <- GRangesList(mapply(importer, file=files, seqid=seqid,
-                                 SIMPLIFY=FALSE, USE.NAMES=FALSE))
-    }
-    names(anno) <- seqnames(seqinfo(anno))
-  }
-  
-  if (type == "table") {
-    if (is.null(seqid <- list(...)[["seqid"]])) {
-      stop("Provide sequence identifiers (accession numbers) for the annotation files.")
-    } else {
-      if (length(seqid) != length(files))
-        stop("Provide as many sequence identifiers as annotation files")
-      sep <- list(...)[["sep"]] %||% "\t"
-      anno <- GRangesList(mapply(importer, file=files, seqid=seqid,
-                                 sep=sep, SIMPLIFY=FALSE, USE.NAMES=FALSE))
-    }
-    names(anno) <- seqnames(seqinfo(anno))
-  } 
-  
-  new("annotationList", anno)
+#' @inheritParams importAnnotation
+#' @seealso \code{\link{mercator}}, \code{\link{alignSegments}}.
+#' @export
+annotationList <- function(annopath, type = "gff", ...) {
+  new("annotationList", importAnnotation(annopath, type, ...))
 }
 
 
@@ -94,7 +61,7 @@ annotationList <- function(files, type = "gff", ...) {
   cat(sQuote(class(x)), " of length ", len, "\n", sep = "")
   if (len == 0L)
     return(invisible(NULL))
-  nm <- names(x)
+  nm <- seqlevels(x)
   len <- elementLengths(x)
   slen <- seqlengths(x)
   cat(labeledLine("Id", els=nm, count=TRUE))
@@ -197,38 +164,38 @@ setMethod("mcols", "annotationList",
           function (x) callNextMethod())
 
 
-setMethod("[", "annotationList",
-          function (x, i, j, ..., drop = TRUE) {
-            if (!missing(i)) {
-              if (is.numeric(i)) {
-                i <- names(x)[i]
-              }
-              x <- callNextMethod(x = x, i = i, ...)
-              seql <- which(seqlevels(x) %in% i)
-              seqinfo(x, new2old = seql) <- seqinfo(x)[i]
-            } else {
-              x <- callNextMethod(x = x, ...)
-            }
-            
-            x
-          })
-
-
-setMethod("[[", "annotationList",
-          function (x, i, j, ...) {
-            if (!missing(i)) {
-              if (is.numeric(i)) {
-                i <- names(x)[i]
-              }
-              x <- callNextMethod(x = x, i = i, ...)
-              seql <- which(seqlevels(x) %in% i)
-              seqinfo(x, new2old = seql) <- seqinfo(x)[i]
-            } else {
-              x <- callNextMethod(x = x, ...)
-            }
-            
-            x
-          })
+# setMethod("[", "annotationList",
+#           function (x, i, j, ..., drop = TRUE) {
+#             if (!missing(i)) {
+#               if (is.numeric(i)) {
+#                 i <- names(x)[i]
+#               }
+#               x <- callNextMethod(x = x, i = i, ...)
+#               seql <- which(seqlevels(x) %in% i)
+#               seqinfo(x, new2old = seql) <- seqinfo(x)[i]
+#             } else {
+#               x <- callNextMethod(x = x, ...)
+#             }
+#             
+#             x
+#           })
+# 
+# 
+# setMethod("[[", "annotationList",
+#           function (x, i, j, ...) {
+#             if (!missing(i)) {
+#               if (is.numeric(i)) {
+#                 i <- names(x)[i]
+#               }
+#               x <- callNextMethod(x = x, i = i, ...)
+#               seql <- which(seqlevels(x) %in% i)
+#               seqinfo(x, new2old = seql) <- seqinfo(x)[i]
+#             } else {
+#               x <- callNextMethod(x = x, ...)
+#             }
+#             
+#             x
+#           })
 
 
 #' @export

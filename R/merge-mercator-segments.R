@@ -5,7 +5,7 @@
 #' @importFrom rmisc trim
 NULL
 
-merge_mercator_segments <- function (seg_dir, writeToFile = FALSE, outfile =  NULL) {
+merge_mercator_segments <- function (seg_dir, outfile =  NULL) {
   parent_dir <- normalizePath(strsplitN(seg_dir, "segments", 1))
   segments <- dir(seg_dir, "^\\d+$", full.names=TRUE)
   segments <- segments[order(as.numeric(split_path(segments)))]
@@ -18,7 +18,7 @@ merge_mercator_segments <- function (seg_dir, writeToFile = FALSE, outfile =  NU
   # merge segments into one multi fasta file
   aln <- merge_segments(segments, headers)
   
-  if (writeToFile) {
+  if (!is.null(outfile)) {
     aln_path <- outfile %||% file.path(seg_dir, "fsa.mfa")
     writeXStringSet(aln, aln_path)
   }
@@ -54,6 +54,12 @@ merge_segments <- function(segments, headers) {
   genomes <- names(headers)
   paths <- file.path(segments, "fsa.mfa")
   seqlist <- lapply(paths, readDNAStringSet)
+  
+  empty_seqment <- vapply(seqlist, length, numeric(1)) == 0L
+  if (any(empty_seqment)) {
+    stop("No alignment in segment: ", paths[empty_seqment], call.=FALSE)
+  }
+  
   mat <- t(vapply(Map(names, seqlist), function (n) genomes%in%n,
                   logical(length(genomes))))
   colnames(mat) <- genomes

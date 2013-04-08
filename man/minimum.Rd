@@ -1,0 +1,27 @@
+\name{minimum}
+\alias{minimum}
+\title{INTERNAL: Map a genomic range to the alignment}
+\usage{
+  minimum(a, b)
+}
+\arguments{
+  \item{cr}{cut range (the range within a genomic hit range
+  which we want to slice from an alignment)}
+
+  \item{map_min}{Minumum position in the genomic map.}
+
+  \item{map_max}{Maximum position in the genomic map}
+
+  \item{ghr}{genomic hit range (range of an orthologous
+  genomic segment within a genome)}
+
+  \item{ahr}{alignment hit range (degapped range of an
+  orthologous genomic segment within a genome)}
+
+  \item{gaps}{gapranges}
+}
+\description{
+  INTERNAL: Map a genomic range to the alignment
+}
+\keyword{internal}
+

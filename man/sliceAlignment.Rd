@@ -7,20 +7,26 @@
 \arguments{
   \item{ranges}{a \code{\linkS4class{GRanges}} or
   \code{\linkS4class{GRangesList}} containing genomic
-  positions to be mapped to the alignment.}
+  positions.}
 
   \item{aln}{an \code{\linkS4class{annotatedAlignment}}
   instance.}
 
-  \item{targetGenomes}{}
+  \item{targetGenomes}{a character vector of genome names.}
 }
 \value{
   A \code{\linkS4class{DNAStringSetList}} object.
 }
 \description{
-  The ranges passed to \code{sliceAlignment} are first
-  converted from genomic ranges to alignment ranges. The
-  alignment ranges are returned as metadata with the
-  resulting \code{\linkS4Class{DNAStringSetList}} object.
+  The ranges passed to \code{sliceAlignment} are converted
+  from genomic ranges to alignment ranges. The alignment
+  ranges are returned as metadata with the resulting
+  \code{\linkS4Class{DNAStringSetList}} object.
+}
+\seealso{
+  \code{\link{alignment2Genome}},
+  \code{\link{genome2Alignment}},
+  \code{\link{genome2Genome}},
+  \code{\link{findAnnotation}}.
 }
 

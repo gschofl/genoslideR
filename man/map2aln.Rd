@@ -1,20 +1,23 @@
 \name{map2aln}
 \alias{map2aln}
-\title{INTERNAL: Map a genomic range to the alignment}
+\title{[INTERNAL] Map a genomic range to the alignment}
 \usage{
   map2aln(ranges, gmap, amap, gaps)
 }
 \arguments{
-  \item{range}{A \code{\linkS4class{Granges}} object.}
+  \item{ranges}{An IRanges instance}
 
-  \item{gmap}{}
+  \item{gmap}{A Granges instance.}
 
-  \item{amap}{}
+  \item{amap}{A Granges instance.}
 
-  \item{gaps}{}
+  \item{gaps}{A Granges instance.}
+}
+\value{
+  A GrangesList instance.
 }
 \description{
-  INTERNAL: Map a genomic range to the alignment
+  [INTERNAL] Map a genomic range to the alignment
 }
 \keyword{internal}
 

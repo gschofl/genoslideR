@@ -8,14 +8,14 @@ NULL
 
 #' Import a genome alignment
 #' 
-#' @param aln Path to a directory containing mercator segments,
-#' a single file in mfa (mult-fasta) or maf (multiple alignment file)
-#' format containing the genome aligment.
-#' @param writeToFile
-#' @param outfile
+#' @param alnpath Path to the directory containing mercator segments,
+#' a single file in \sQuote{mfa} (multi-fasta) or \sQuote{maf} (multiple
+#' alignment file) format containing the genome aligment.
+#' @param outfile if not \code{NULL} the alignment is writen to file in
+#' multi-fasta format.
 #'
 #' @details
-#' If the alignment is provided as a multi fasta file the each header
+#' If the alignment is provided as a multi-fasta file the each header
 #' must contain a map of the orthologous segments in the following 
 #' format: 
 #'  
@@ -25,20 +25,21 @@ NULL
 #' genomes in the alignment which can be shorter than the length of the
 #' original genome.
 #'  
-#' @return A \code{\linkS4class[Biostrings]{DNAStringSet}} instance.
+#' @return A \code{\linkS4class{DNAStringSet}} instance.
+#' @seealso \code{\link{mercator}}.
 #' @export
-importAlignment <- function (aln, writeToFile=FALSE, outfile=NULL) {
+importAlignment <- function (alnpath, outfile=NULL) {
   
-  if (!file.exists(aln)) {
+  if (!file.exists(alnpath)) {
     stop("No alignment file provided")
   }
   
-  if (is_segments_dir(aln)) {
-    seq <- merge_mercator_segments(seg_dir=segments_dir(aln), writeToFile, outfile)
-  } else if (is_maf(aln)) {
-    seq <- readMAF(aln)
-  } else if (is_mfa(aln)) {
-    seq <- readDNAStringSet(aln)
+  if (is_segments_dir(alnpath)) {
+    seq <- merge_mercator_segments(segments_dir(alnpath), outfile)
+  } else if (is_maf(alnpath)) {
+    seq <- readMAF(alnpath)
+  } else if (is_mfa(alnpath)) {
+    seq <- readDNAStringSet(alnpath)
   } else {
     stop("No valid alignment file provided")
   }
@@ -55,7 +56,7 @@ header2map <- function (seq) {
   genomes <- strsplitN(headers, ' ', 1)
   coverage <- strsplitN(headers, ' ', 2)
   
-  gapranges <- get_alignment_gaps(seq, genomes)
+  gapranges <- get_alignment_gaps(x=seq, genomes)
   seqlengths(gapranges) <- width(seq)
   
   map <- strsplit(strsplitN(headers, ' ', -c(1:2)), ' ')
@@ -129,5 +130,5 @@ get_alignment_gaps <- function(x, genomes) {
   seqs <- as.list(as(x, "character"))
   GRangesList(mapply(function(genome, seq) {
     GRanges(genome, find_gaps(seq), strand="*")
-  }, genomes, seqs))
+  }, genome=genomes, seq=seqs))
 }

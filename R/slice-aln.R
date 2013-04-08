@@ -3,29 +3,29 @@
 #' @importFrom Biostrings xscat
 #' @importFrom Biostrings subseq
 #' @importFrom Biostrings reverse
-#' @importFrom Biostrings XStringSetList
 #' @importFrom rmisc %|null|%
 NULL
 
 
-#' INTERNAL: Slice genomic ranges mapped to an alignment
+#' [INTERNAL] Slice genomic ranges mapped to an alignment
 #'
 #' @param ranges A \code{\linkS4class{Granges}} object.
 #' @param aln A \code{\linkS4class{AnnotatedAlignment}} object.
 #' 
 #' @keywords internal
-sliceAlnRanges <- function (ranges, aln) {
+sliceAlnranges <- function (alnranges, aln) {
   metadata(aln) <- list()
-  listData <- mapply(.slicer, r=ranges, MoreArgs=list(aln = aln))
+  ar <- alnranges[unlist(lapply(alnranges, length), use.names=FALSE) != 0]
+  listData <- lapply(ar, .slicer, aln)
   ans <- Biostrings:::XStringSetList("DNA", listData)
-  metadata(ans) <- list(alignment_positions = ranges)
+  metadata(ans) <- list(alignment_positions = alnranges)
   ans
 }
 
 
-.slicer <- function(r, aln) {
-  dss <- mapply(subseq2, start = start(r), end = end(r),
-                strand = as.character(strand(r)), MoreArgs=list(x = aln))
+.slicer <- function(ar, aln) {
+  dss <- mapply(subseq2, start = start(ar), end = end(ar),
+                strand = as.character(strand(ar)), MoreArgs=list(x = aln))
   if (length(dss) == 1) {
     dss <- IRanges::compact(dss[[1]])
   } else {

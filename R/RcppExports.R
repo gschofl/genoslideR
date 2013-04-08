@@ -13,3 +13,11 @@ make_ungapped_ranges <- function(start, end, nm, gaprange) {
     .Call('genoslideR_make_ungapped_ranges', PACKAGE = 'genoslideR', start, end, nm, gaprange)
 }
 
+update_genomic_position_cpp <- function(cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand) {
+    invisible(.Call('genoslideR_update_genomic_position_cpp', PACKAGE = 'genoslideR', cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand))
+}
+
+update_alignment_position_cpp <- function(cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand) {
+    invisible(.Call('genoslideR_update_alignment_position_cpp', PACKAGE = 'genoslideR', cut_ranges, genomic_hit_ranges, alignment_hit_ranges, strand))
+}
+

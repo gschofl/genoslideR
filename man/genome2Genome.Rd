@@ -5,14 +5,14 @@
   genome2Genome(ranges, aln, targetGenomes = NULL)
 }
 \arguments{
-  \item{ranges}{a \code{\linkS4class{GRanges}} object
-  containing alignment positions to be mapped to the
-  genomes.}
+  \item{ranges}{a \code{\linkS4class{GRanges}} or
+  \code{\linkS4class{GRangesList}} containing genomic
+  positions to map to the \code{targetGenomes}.}
 
   \item{aln}{an \code{\linkS4class{annotatedAlignment}}
   instance.}
 
-  \item{targetGenomes}{}
+  \item{targetGenomes}{a character vector of genome names.}
 }
 \value{
   A \code{\linkS4class{GRangesList}} object.
@@ -20,5 +20,11 @@
 \description{
   Map genomic positions in one genome to genomic positions
   in other genomes.
+}
+\seealso{
+  \code{\link{alignment2Genome}},
+  \code{\link{genome2Alignment}},
+  \code{\link{sliceAlignment}},
+  \code{\link{findAnnotation}}.
 }
 

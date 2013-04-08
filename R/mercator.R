@@ -30,11 +30,11 @@ NULL
 #' containing orthologous genomic segments in multi fasta format, a file
 #' named \sQuote{map}, and a file named \sQuote{genomes}.
 #' 
-#' \code{mercator} segements can be aligned using
-#' \code{\link{alignMercatorSegments}}, merged into a single multi-fasta
-#' alignment file using \code{\link{importAlignment}} or imported to R
-#' as an \code{\linkS4class{annotatedAlignment}} using
-#'  \code{\link{annotatedAlignment}}.
+#' \code{mercator} segements can be aligned using the
+#' \code{\link{alignSegments}} function, merged into a single multi-fasta
+#' alignment file and imported into R as a \code{\linkS4class{DNAStringSet}}
+#' using \code{\link{importAlignment}} or imported to R as an
+#' \code{\linkS4class{annotatedAlignment}} using \code{\link{annotatedAlignment}}.
 #' 
 #' @param seq_files Path to sequence files ('fasta' or 'genbank').
 #' @param anno_files (Optional) Path to annotation files. If no
@@ -48,7 +48,8 @@ NULL
 #' \code{\link{maskSequence}}.
 #' @param wd Working directory. Defaults to the parent directory of
 #' the provided sequence files.
-#' 
+#' @seealso \code{\link{alignSegments}}, \code{\link{importAlignment},
+#' \code{\link{annotatedAlignment}}.
 #' @export
 mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
                       glimmeropts = list(o=50, g=110, t=30), 
@@ -576,14 +577,14 @@ match_genes <- function(runs, merc) {
 }
 
 
-#' conctruct NJ or BIONJ tree from one or more multi-FASTA files
+#' [INTERNAL] conctruct NJ or BIONJ tree from one or more multi-fasta files
 #' 
 #' @param fasta_dir Directory containing (a) multi-FASTA file(s).
 #' @param align One of 'clustal', 'muscle', or 'tcoffee'.
 #' @param dist.model See \code{\link[ape]{dist.dna}}
 #' @param tree One of 'nj', 'bionj', or 'fastme'.
 #' 
-#' @export
+#' @keywords internal
 make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") {
   
   fna <- dir(fna_dir, "\\.fa$", full.names=TRUE)
@@ -670,7 +671,8 @@ fsaAlignSegmentDirs <- function (initdir = ".", seqfile = "seqs.fasta",
 alignSegmentDir <- function(segment, seqfile, constraints, outfile = "fsa.mfa",
                             skip.completed = TRUE, fsa.opts = list()) {
   
-  if (skip.completed && file.exists(file.path(segment, outfile))) {
+  if (skip.completed && file.exists(file.path(segment, outfile)) && 
+      file.info(file.path(segment, outfile))$size > 0) {
     return(NULL)
   }
   
