@@ -19,6 +19,7 @@
 #' @importFrom biofiles gbRecord
 #' @importFrom biofiles ranges
 #' @importFrom GenomicRanges mcols<-
+#' @importFrom IRanges IRanges
 NULL
 
 
@@ -36,7 +37,8 @@ NULL
 importAnnotation <- function(annopath, type = "gff", ...) {
   
   type <- match.arg(type, c("gff", "ptt", "ftb", "genbank", "gbk", "table"))
-  importer <- match.fun(paste0("import_annotation_from_", type))
+  importer <- get(paste0("import_annotation_from_", type), mode="function",
+                  inherits=TRUE)
   
   if (type %in% c("gff", "ftable", "genbank", "gbk")) {
     features <- list(...)[["features"]] %|null|% c("CDS", "RNA")
