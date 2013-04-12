@@ -1,3 +1,4 @@
+export(aggregateAlignment)
 export(alignSegments)
 export(alignment2Genome)
 export(annotatedAlignment)

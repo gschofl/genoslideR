@@ -267,8 +267,6 @@ setMethod("proteinID", "annotatedAlignment",
           })
 
 
-#' @export
-setGeneric("type", function (x, ...) standardGeneric("type"))
 setMethod("type", "annotatedAlignment",
           function (x) {
             type(annotation(x))

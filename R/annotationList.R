@@ -260,6 +260,7 @@ setMethod("proteinID", "GRanges",
           })
 
 
+#' @export
 setGeneric("type")
 setMethod("type", "GRangesList",
           function(x) {
