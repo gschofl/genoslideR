@@ -45,3 +45,5 @@ Collate:
     'aln2map.R'
     'slice-aln.R'
     'map-alignments.R'
+    'Eta.R'
+    'aggregate-alignment.R'

@@ -7,38 +7,78 @@
 NULL
 
 
-#' [INTERNAL] Slice genomic ranges mapped to an alignment
+#' [INTERNAL] Slice GRangesList from an alignment
 #'
-#' @param ranges A \code{\linkS4class{Granges}} object.
-#' @param aln A \code{\linkS4class{AnnotatedAlignment}} object.
+#' @param grl A \code{\linkS4class{GrangesList}} object.
+#' @param dss A \code{\linkS4class{DNAStringSet}} object.
 #' 
 #' @keywords internal
-sliceAlnranges <- function (alnranges, aln) {
-  metadata(aln) <- list()
-  ar <- alnranges[unlist(lapply(alnranges, length), use.names=FALSE) != 0]
-  listData <- lapply(ar, .slicer, aln)
+sliceGRL <- function (grl, dss, compact = FALSE) {
+  dss@metadata <- list()
+  grl <- grl[unlist(lapply(grl, length), use.names=FALSE) != 0]
+  listData <- lapply(grl, sliceGR, dss = dss, compact = compact)
   ans <- Biostrings:::XStringSetList("DNA", listData)
-  metadata(ans) <- list(alignment_positions = alnranges)
+  metadata(ans) <- list(alignment_positions = grl)
   ans
 }
 
 
-.slicer <- function(ar, aln) {
-  dss <- mapply(subseq2, start = start(ar), end = end(ar),
-                strand = as.character(strand(ar)), MoreArgs=list(x = aln))
-  if (length(dss) == 1) {
-    dss <- IRanges::compact(dss[[1]])
-  } else {
-    dss <- IRanges::compact(setNames(do.call(xscat, dss), nm=names(dss[[1]])))
-  }
-  dss
+#' [INTERNAL] Slice GRanges from an alignment
+#'
+#' @param dss A \code{\linkS4class{DNAStringSet}} object.
+#' @param gr A \code{\linkS4class{Granges}} object.
+#'
+#' @keywords internal
+sliceGR <- function(gr, dss, compact = FALSE) {
+  start <- start(gr)
+  width <- width(gr)
+  reverse <- as.integer(strand(gr)) == 2L
+  .slice(dss, start, width, reverse, compact=compact)
 }
 
 
-subseq2 <- function(x, start, end, strand) {
-  if (as.character(strand) == "-") {
-    reverse(subseq(x, start, end))
-  } else {
-    subseq(x, start, end)
+.slice <- function (x, start, width, reverse = FALSE, complement = FALSE, compact = FALSE) {
+  if (length(start) == 1)
+    return( narrowAlignment(x, start, width, reverse, complement, compact) )
+  
+  xl <- mapply(narrowAlignment, start = start, width = width, reverse = reverse,
+               complement = complement, compact = compact, MoreArgs=list(x = x))
+  xl <- setNames(.Call2("XStringSet_xscat", xl, PACKAGE = "Biostrings"), 
+           nm = names(xl[[1L]]))
+  xl
+}
+
+
+narrowAlignment <- function (x, start, width, reverse=FALSE, complement=FALSE,
+                             compact=FALSE) {
+  
+  range <- narrowAlnrange(x@ranges, start, width)
+  slot(x, "ranges", check = FALSE) <- range
+  
+  if (compact || complement || reverse) {
+    
+    if (complement)
+      lkup <- Biostrings:::getDNAComplementLookup()
+    else
+      lkup <- NULL
+    
+    x <- xvcopy(x, lkup = lkup, reverse = reverse)
   }
-} 
+  
+  x
+}
+
+
+narrowAlnrange <- function (x, start, width) {
+  SEW <- .Call2("solve_user_SEW", refwidths = x@width, start = start,
+                end = NA_integer_, width = width,
+                translate.negative.coord = TRUE, 
+                allow.nonnarrowing = FALSE, PACKAGE = "IRanges")
+  slot(x, "start", check=FALSE) <- x@start + SEW@start - 1L
+  slot(x, "width", check=FALSE) <- SEW@width
+  x
+}
+
+
+
+

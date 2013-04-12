@@ -1,0 +1,16 @@
+\name{sliceGR}
+\alias{sliceGR}
+\title{[INTERNAL] Slice GRanges from an alignment}
+\usage{
+  sliceGR(gr, dss, compact = FALSE)
+}
+\arguments{
+  \item{dss}{A \code{\linkS4class{DNAStringSet}} object.}
+
+  \item{gr}{A \code{\linkS4class{Granges}} object.}
+}
+\description{
+  [INTERNAL] Slice GRanges from an alignment
+}
+\keyword{internal}
+

@@ -184,9 +184,9 @@ sliceAlignment <- function (ranges, aln, targetGenomes = NULL) {
   gmap <- gMap(aln, compact = TRUE)[[genome]]
   amap <- aMap(aln, compact = TRUE)[[genome]]
   gaps <- genoslideR::gaps(aln)[[genome]]
-  aln <- alignment(aln)[targetGenomes]
-  alnranges <- map2aln(mapping_ranges, gmap, amap, gaps)
-  sliceAlnranges(alnranges, aln)
+  dss <- alignment(aln)[targetGenomes]
+  grl <- map2aln(mapping_ranges, gmap, amap, gaps)
+  sliceGRL(grl, dss, compact=TRUE)
 }
 
 
@@ -218,6 +218,16 @@ findAnnotation <- function (ranges, aln, targetGenomes = NULL) {
     ranges <- ranges(ranges)  
   }
   
+  if (is(ranges, "RangedData")) {
+    ranges <- unlist(ranges(ranges))
+  }
+  
+  if (is(ranges, "RangedDataList")) {
+    ranges <- IRangesList(lapply(ranges@listData, function(r) {
+      unlist(ranges(r))
+    }))
+  }
+  
   if (!is(ranges, "IRangesList")) {
     ranges <- unname(split(ranges, seq_along(ranges)))
   }
@@ -236,16 +246,10 @@ findAnnotation <- function (ranges, aln, targetGenomes = NULL) {
   if (is.null(nm)) {
     nm <- rep(seq_along(ranges), width(ranges@partitioning)) 
   } 
-
   mr <- aln2map(ranges, gmap, amap, gaps)
-  if (length(nm) != unlist(unique(lapply(mr, length)))) {
-    stop("Unequal number of mapped ranges")
-  }
-  
   hl <- findOverlaps(ranges(mr), ranges(anno))
   splitter <- factor(unlist(lapply(hl, queryHits), use.names=FALSE))
   hits <- split(anno@unlistData[subjectHits(hl), ], splitter)
-  
   res <- lapply(hits, .newAnnotationList)
   names(res) <- nm
   res
