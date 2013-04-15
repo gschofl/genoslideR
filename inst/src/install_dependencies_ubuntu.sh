@@ -4,10 +4,10 @@ set -e #-x
 function set_env () {
     # @SET_ENV
     # Define $_srcdir and $_bindir
-    echo "Where shall we put the source code [/opt/share]: " | tr -d "\n"
+    echo "Where shall we put the source code [/opt/genoslideR-tools]: " | tr -d "\n"
     read _srcdir
     eval _srcdir=${_srcdir}
-    export _srcdir=${_srcdir:-/opt/share}
+    export _srcdir=${_srcdir:-/opt/genoslideR-tools}
     [[ -d "$_srcdir" ]] || mkdir -p $_srcdir
 
     echo "Where shall we install the programme [/usr/local/bin]: " | tr -d "\n"
