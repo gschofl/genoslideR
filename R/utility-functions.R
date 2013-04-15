@@ -98,7 +98,8 @@ install_genoslider_dependencies <- function (sudo = TRUE) {
     term <- ""
   }
 
-  exec <- system.file("src", "install_dependencies_ubuntu.sh", package="genoslideR")
+  exec <- system.file("inst", "src", "install_dependencies_ubuntu.sh",
+                      package="genoslideR")
   if (sudo)
     system(paste(term, "'sudo", exec, "'"))
   else
