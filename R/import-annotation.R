@@ -6,11 +6,11 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
-#' @importFrom rentrez efetch
-#' @importFrom rentrez esearch
-#' @importFrom rentrez esummary
-#' @importFrom rentrez docsum
-#' @importFrom rentrez content
+#' @importFrom Rentrez efetch
+#' @importFrom Rentrez esearch
+#' @importFrom Rentrez esummary
+#' @importFrom Rentrez docsum
+#' @importFrom Rentrez content
 #' @importFrom rmisc strip_ext
 #' @importFrom rmisc xvalue
 #' @importFrom rmisc strsplitN

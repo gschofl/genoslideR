@@ -5,3 +5,5 @@ genoslideR.Rproj
 data/
 stuff/
 init.R
+*.o
+*.so

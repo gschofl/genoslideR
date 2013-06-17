@@ -652,10 +652,7 @@ fsaAlignSegmentDirs <- function (initdir = ".", seqfile = "seqs.fasta",
                                  outfile = "fsa.mfa", constraints = "cons",
                                  skip.completed = TRUE, fsa.opts = list(),
                                  ncores = detectCores()) {
-  if (!hasCommand("fsa")) {
-    stop("FSA is not installed")
-  }
-  
+  assert_that(has_command('fsa')) 
   segments <- normalizePath(dir(initdir, "^\\d+$", full.names=TRUE))
   segments <- segments[order(as.numeric(split_path(segments)))]
   segdirs <- mcmapply(alignSegmentDir, segment = segments,

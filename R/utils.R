@@ -101,9 +101,10 @@ is_maf <- function (f) {
   }, logical(1))
 }
 
-#' @importFrom rmisc hasCommand
+#' @importFrom assertthat see_if
+#' @importFrom rmisc has_command
 hasDependencies <- function(cmd) {
-  lcmd <- hasCommand(cmd)
+  lcmd <- vapply(cmd, function (e) see_if(has_command(e)), logical(1))
   if (any(!lcmd)) {
     stop("The following external program(s) must be installed: ", 
          paste(cmd[!lcmd], collapse=", "),
