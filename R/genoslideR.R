@@ -17,6 +17,7 @@
 #' @docType package
 #' @title Genome Alignments and Annotation.
 #' @keywords package
+#' @useDynLib genoslideR
 #' @import methods
 #' @import Rcpp
 NULL

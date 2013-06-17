@@ -14,18 +14,20 @@ Depends:
     Rcpp (>= 0.10.2)
 LinkingTo: Rcpp
 Imports:
-    methods,
-    BiocGenerics,
-    IRanges,
-    GenomicRanges,
-    genomeIntervals,
-    Biostrings,
-    rmisc,
-    biofiles,
-    rentrez,
-    RCurl,
     ape,
-    parallel
+    assertthat,
+    BiocGenerics,
+    biofiles,
+    Biostrings,
+    genomeIntervals,
+    GenomicRanges,
+    IRanges,
+    methods,
+    parallel,
+    Rentrez,
+    RCurl,
+    rmisc,
+    XVector
 Collate:
     'annotationList.R'
     'annotatedAlignment.R'

@@ -1,7 +1,7 @@
 #' @importFrom RCurl getURL
 #' @importFrom RCurl curlOptions
 #' @importFrom RCurl getCurlHandle
-#' @importFrom rmisc not_empty
+#' @importFrom assertthat assert_that
 NULL
 
 #' Retrieve bacterial genomes from NCBI FTP site
@@ -35,7 +35,7 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
   
   print(target)
   idx <- readline("Download from these directories (y/n/index) [y]: ")
-  if (not_empty(idx) && idx != "y") {
+  if (!all_empty(idx) && idx != "y") {
     if (idx == "n") {
       target <- NULL
     } else {
@@ -82,14 +82,11 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
 #'
 #' @export
 install_genoslider_dependencies <- function (sudo = TRUE) {
-  
-  if (!hasCommand("zsh")) {
-    stop("Install 'zsh' and then try again ...")
-  }
-  
+  assert_that(has_command('zsh')) 
   if (is_empty(Sys.getenv("TERM"))) {
     term_emul <- c("gnome-terminal", "konsole", "xterm")
-    term_emul <- term_emul[hasCommand(term_emul)][1]
+    term_emul <- 
+      term_emul[vapply(term_emul, function (e) see_if(has_command(e)), logical(1))][1]
     if (is.na(term_emul)) {
       stop("No terminal emulator found")
     }

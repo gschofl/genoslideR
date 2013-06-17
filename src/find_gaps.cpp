@@ -12,7 +12,7 @@ SEXP find_gaps( std::string seq ) {
   bool check_gap_width = false;
   vector<int> gap_start;
   vector<int> gap_width;
-  for (auto it = seq.cbegin(); it != seq.cend(); ++it)
+  for (auto it = begin(seq); it != end(seq); ++it)
   {  
     if (*it == gap_char)
     {

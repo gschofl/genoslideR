@@ -1,5 +1,4 @@
 #' @importFrom rmisc replace_ext
-#' @importFrom rmisc not.null
 #' @importFrom rmisc all_empty
 NULL
 
@@ -71,7 +70,7 @@ longorfs <- function (f, outdir = glimmer_dir) {
   longorfs <- file.path(outdir, replace_ext(basename(f), "longorfs", level=1))
   st <- system(paste("long-orfs -n -t 1.15", f, longorfs),
                intern = TRUE, ignore.stdout = TRUE, ignore.stderr = TRUE)
-  if (not.null(attr(st, "status")))
+  if (!is.null(attr(st, "status")))
     stop("Failed to find long-orf training set")
   
   return(invisible(longorfs))
@@ -83,7 +82,7 @@ extract <- function(f, orfs) {
   message("Extracting training sequences")
   train <- replace_ext(orfs, "train", level=1)
   st <- system(paste("extract -t",f, orfs, ">", train), intern = TRUE)
-  if (not.null(attr(st, "status")))
+  if (!is.null(attr(st, "status")))
     stop("Failed to extract training sequences")
   
   return(invisible(train))
@@ -96,7 +95,7 @@ build_icm <- function(train) {
   icm <- replace_ext(train, "icm", level=1)
   st <- system(paste("build-icm -r", icm, "<", train),
                intern = TRUE)
-  if (not.null(attr(st, "status")))
+  if (!is.null(attr(st, "status")))
     stop("Failed to build ICM")
   
   return(invisible(icm))
@@ -122,7 +121,7 @@ run_glimmer <- function(f, icm, tag = "",
   st <- SysCall("glimmer3", args=args, style="unix", redirection=FALSE,
                 stdin=paste(f, icm, run), intern=TRUE)
   
-  if (not.null(attr(st, "status")))
+  if (!is.null(attr(st, "status")))
     stop("Failed to run Glimmer3")
   
   file.rename(from=paste0(run, ".detail"), to=paste0(run, ".glimmer3.detail"))
@@ -156,7 +155,7 @@ extract_upstream <- function (f, coords, len = 25, sep = 0) {
   st <- system(paste("extract", f, "- >", out), input=upstream,
                intern = TRUE)
   
-  if (not.null(attr(st, "status")))
+  if (!is.null(attr(st, "status")))
     stop("Failed to extract upstream regions")
   
   return(invisible(out))

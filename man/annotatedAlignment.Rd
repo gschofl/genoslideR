@@ -1,5 +1,6 @@
 \name{annotatedAlignment}
 \alias{annotatedAlignment}
+\alias{annotatedAlignment-class}
 \title{Construct an \sQuote{annotatedAlignment}.}
 \usage{
   annotatedAlignment(alnpath, annopath, type, ...)

@@ -2,8 +2,6 @@
 #' @importFrom IRanges ranges
 #' @importFrom IRanges which
 #' @importFrom IRanges order
-#' @importFrom IRanges compact
-#' @importFrom IRanges subseq
 #' @importFrom IRanges split
 #' @importFrom IRanges findOverlaps
 #' @importFrom IRanges subjectHits
@@ -11,6 +9,7 @@
 #' @importFrom GenomicRanges seqnames
 #' @importFrom GenomicRanges GRangesList
 #' @importFrom GenomicRanges GRanges
+#' @importFrom XVector subseq
 NULL
 
 #' [INTERNAL] Map a genomic range to the alignment
