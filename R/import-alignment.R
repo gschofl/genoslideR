@@ -1,6 +1,6 @@
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom parallel mclapply
-#' @importFrom rmisc %.%
+#' @importFrom rmisc compose
 #' @importFrom IRanges runValue
 #' @importFrom IRanges Map
 #' @importFrom GenomicRanges seqlengths<-
@@ -80,10 +80,10 @@ header2map <- function (seq) {
                                   end=m[["genomic_end"]]),
             strand=m[["strand"]], seqinfo=seqinfo)
   }, g = as.list(genomes), cov = as.list(coverage), m = map))
-  names(genomicMap) <- IRanges::Map(as.character%.%runValue, seqnames(genomicMap))
+  names(genomicMap) <- IRanges::Map(compose(as.character, runValue), seqnames(genomicMap))
   
   alignmentMap <- GRangesList(Map(update_position, m = map, g = as.list(genomes)))
-  names(alignmentMap) <- IRanges::Map(as.character%.%runValue, seqnames(alignmentMap))
+  names(alignmentMap) <- IRanges::Map(compose(as.character, runValue), seqnames(alignmentMap))
   
   list(gMap=genomicMap, aMap=alignmentMap, gaps=gapranges) 
 }
