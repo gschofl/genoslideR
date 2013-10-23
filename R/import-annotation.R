@@ -116,7 +116,7 @@ import_annotation_from_ptt <- function(file, seqid = NULL) {
     if (all_empty(x)) {
       stop("No accession number could be retrieved as identifier for these annotations. Provide an identifier.")
     } else {
-      seqid <- strip_ext(accession(as.gbLocation(x)))
+      seqid <- strip_ext(getAccession(as.gbLocation(x)))
     }
   }
   
