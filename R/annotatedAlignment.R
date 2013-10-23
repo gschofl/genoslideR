@@ -1,8 +1,8 @@
 #' @include annotationList.R
 #' @importClassesFrom Biostrings XStringSet
 #' @importFrom BiocGenerics annotation
-#' @importFrom biofiles accession
-#' @importFrom biofiles definition
+#' @importFrom biofiles getAccession
+#' @importFrom biofiles getDefinition
 NULL
 
 #' Construct an \sQuote{annotatedAlignment}.
@@ -127,15 +127,15 @@ setMethod("show", "annotatedAlignment",
           })
 
 
-setMethod("accession", "annotatedAlignment",
+setMethod("getAccession", "annotatedAlignment",
           function (x) {
-            accession(annotation(x))
+            getAccession(annotation(x))
           })
 
 
-setMethod("definition", "annotatedAlignment",
+setMethod("getDefinition", "annotatedAlignment",
           function (x) {
-            definition(annotation(x))
+            getDefinition(annotation(x))
           })
 
 

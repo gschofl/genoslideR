@@ -34,8 +34,8 @@
 #' @importFrom IRanges lapply
 #' @importFrom IRanges gaps
 #' @importFrom Biostrings type
-#' @importFrom biofiles accession
-#' @importFrom biofiles definition
+#' @importFrom biofiles getAccession
+#' @importFrom biofiles getDefinition
 #' @importFrom biofiles qualif
 NULL
 
@@ -77,14 +77,14 @@ setMethod("show", "annotationList",
 
 
 #' @export
-setGeneric("accession")
-setMethod("accession", "annotationList",
+setGeneric("getAccession")
+setMethod("getAccession", "annotationList",
           function (x) seqnames(seqinfo(x)))
 
 
 #' @export
-setGeneric("definition")
-setMethod("definition", "annotationList",
+setGeneric("getDefinition")
+setMethod("getDefinition", "annotationList",
           function (x) genome(seqinfo(x)))
 
 

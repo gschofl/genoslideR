@@ -83,7 +83,7 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
 #' @export
 install_genoslider_dependencies <- function (sudo = TRUE) {
   assert_that(has_command('zsh')) 
-  if (is_empty(Sys.getenv("TERM"))) {
+  if (!nzchar(Sys.getenv("TERM"))) {
     term_emul <- c("gnome-terminal", "konsole", "xterm")
     term_emul <- 
       term_emul[vapply(term_emul, function (e) see_if(has_command(e)), logical(1))][1]
