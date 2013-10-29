@@ -90,7 +90,7 @@ install_genoslider_dependencies <- function(sudo = TRUE) {
     if (is.na(term_emul)) {
       stop("No terminal emulator found")
     }
-    term <- paste(term_emul, "-e")
+    term <- paste(term_emul, "-e ")
   } else {
     term <- ""
   }

@@ -14,7 +14,6 @@
 #' @return Character vector. Path to softmasked file(s).
 #' @export
 maskSequence <- function(fasta) {
-
   ## check dependencies
   hasDependencies(c("awk", "build_lmer_table", "RepeatScout", "filter-stage-1.prl",
                     "RepeatMasker", "nmerge", "faSoftMask"))
@@ -25,7 +24,6 @@ maskSequence <- function(fasta) {
 
 
 repeatmasker <- function (f) {
-  
   pwd <- dirname(f)
   fn <- basename(f)
   ## check if a softmasked file is already exists
