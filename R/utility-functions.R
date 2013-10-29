@@ -81,12 +81,12 @@ ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria",
 #' @param sudo if \code{TRUE} install with sudo
 #'
 #' @export
-install_genoslider_dependencies <- function (sudo = TRUE) {
+install_genoslider_dependencies <- function(sudo = TRUE) {
   assert_that(has_command('zsh')) 
   if (!nzchar(Sys.getenv("TERM"))) {
     term_emul <- c("gnome-terminal", "konsole", "xterm")
     term_emul <- 
-      term_emul[vapply(term_emul, function (e) see_if(has_command(e)), logical(1))][1]
+      term_emul[vapply(term_emul, function(e) see_if(has_command(e)), FALSE)][1]
     if (is.na(term_emul)) {
       stop("No terminal emulator found")
     }
@@ -94,14 +94,17 @@ install_genoslider_dependencies <- function (sudo = TRUE) {
   } else {
     term <- ""
   }
-
-  exec <- system.file("inst", "src", "install_dependencies_ubuntu.sh",
-                      package="genoslideR")
-  if (sudo)
-    system(paste(term, "'sudo", exec, "'"))
-  else
-    system(paste(term, "'", exec, "'"))
-
+  if (sudo) {
+    sudo <- "sudo "
+  } else {
+    sudo <- ""
+  }
+  exec <- system.file("scripts", "install_dependencies_ubuntu.sh", package="genoslideR")
+  if (!nchar(term)) {
+    system(paste0(sudo, exec))
+  } else {
+    system(paste0(term, "'", sudo, exec, "'"))
+  }
 }
 
 #' Quickly look up the size of a file
