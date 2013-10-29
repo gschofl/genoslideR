@@ -130,6 +130,11 @@ function install_mercator () {
         install_blat
     fi
 
+    ## install muscle
+    if ! command -v muscle >/dev/null 2>&1; then
+        sudo apt-get --yes install muscle
+    fi
+
     make 2>&1 |tee $_cnddir/mercator-make.log
     make install prefix=$_cnddir
     for x in $_cnddir/bin/*; do

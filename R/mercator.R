@@ -63,12 +63,11 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   
   ## Check dependencies for mercator
   hasDependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
-                    "makeAlignmentInput",
-                    "sdbExport", "muscle", "omap2hmap", "makeBreakpointGraph",
-                    "makeBreakpointAlignmentInput", "findBreakpoints",
-                    "breakMap", "hmap2omap", "omap2coordinates"))
+                    "makeAlignmentInput", "sdbExport", "muscle", "omap2hmap",
+                    "makeBreakpointGraph", "makeBreakpointAlignmentInput",
+                    "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
   
-  # if not specified the working directory is the parent directory of all
+  # if not specified set the working directory to the parent directory of all
   # sequence files
   if (is.null(wd)) {
     wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
@@ -174,6 +173,7 @@ gff_for_mercator <- function (f, type, wd) {
 
 
 gff2gff <- function (f, wd) {
+  outfiles <- character()
   wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
   for (i in seq_along(f)) {
     l <- readLines(f[i])
