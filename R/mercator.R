@@ -317,8 +317,8 @@ gbk2gff <- function (f, wd) {
     gbk <- readLines(f[i])
     seqid <- strsplit(gbk[1], split = "\\s+")[[1]][2]
     outfile <- file.path(wd[i], paste0(seqid, ".gff"))
-    features_start <- which(substr(gbk, 1, 8) == "FEATURES") + 1
-    features_end <- which(substr(gbk, 1, 6) == "ORIGIN") - 1 %||% length(gbk) - 1
+    features_start <- which(substr(gbk, 1, 8) == "FEATURES") + 1  
+    features_end <- which(grepl("ORIGIN|CONTIG", substr(gbk, 1, 6))) - 1 %||% length(gbk) - 1
     features <- gbk[features_start:features_end]
     cds_idx <- which(substr(features, 6, 8) == "CDS")
     loc <- trim(strsplitN(features[cds_idx], "CDS", 2))
