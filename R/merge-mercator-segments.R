@@ -1,8 +1,4 @@
-#' @importFrom Biostrings writeXStringSet
-#' @importFrom Biostrings readDNAStringSet
-#' @importFrom Biostrings DNAStringSet
-#' @importFrom Biostrings xscat
-#' @importFrom rmisc trim
+#' @importFrom Biostrings writeXStringSet readDNAStringSet DNAStringSet xscat
 NULL
 
 merge_mercator_segments <- function (seg_dir, outfile =  NULL) {

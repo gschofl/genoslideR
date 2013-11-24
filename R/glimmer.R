@@ -1,7 +1,3 @@
-#' @importFrom rmisc replace_ext
-#' @importFrom rmisc all_empty
-NULL
-
 #' Ab initio genome annotation using glimmer3
 #'
 #' @param fasta Path to a genome file(s) in fasta format
@@ -15,8 +11,8 @@ glimmer3 <- function(fasta, opts = list(o=50, g=110, t=30),
                      ..., cleanup = TRUE) {
   
   ## check dependencies
-  hasDependencies(c("glimmer3", "elph", "long-orfs", "extract",
-                    "build-icm", "start-codon-distrib"))
+  has_dependencies(c("glimmer3", "elph", "long-orfs", "extract",
+                     "build-icm", "start-codon-distrib"))
   opts <- merge_list(opts, list(...))
   ncores <- detectCores() - 1 
   glimmer_files <- mclapply(fasta, glimmer, opts=opts, cleanup=cleanup,

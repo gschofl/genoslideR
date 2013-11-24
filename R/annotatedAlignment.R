@@ -1,8 +1,7 @@
 #' @include annotationList.R
 #' @importClassesFrom Biostrings XStringSet
 #' @importFrom BiocGenerics annotation
-#' @importFrom biofiles getAccession
-#' @importFrom biofiles getDefinition
+#' @importFrom biofiles getAccession getDefinition
 NULL
 
 #' Construct an \sQuote{annotatedAlignment}.

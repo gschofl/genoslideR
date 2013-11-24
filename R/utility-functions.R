@@ -1,6 +1,4 @@
-#' @importFrom RCurl getURL
-#' @importFrom RCurl curlOptions
-#' @importFrom RCurl getCurlHandle
+#' @importFrom RCurl getURL curlOptions getCurlHandle
 #' @importFrom assertthat assert_that
 NULL
 
@@ -19,11 +17,9 @@ NULL
 #' @export
 ncbi_bacteria <- function(which, what="gbk|gff|fna", where="~/Bacteria", 
                           ignore.case=TRUE) {
-  
   if (missing(which)) {
     stop("Provide a regexp or an index to delimit genomes")
   }
-  
   ncbi_url <- "ftp://ftp.ncbi.nih.gov/genomes/Bacteria/"
   bact_dirs <- strsplit(getURL(ncbi_url, ftplistonly=TRUE), "\\n")[[1]]
   

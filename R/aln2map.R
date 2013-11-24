@@ -1,13 +1,5 @@
-#' @importFrom IRanges ranges
-#' @importFrom IRanges split
-#' @importFrom IRanges mapply
-#' @importFrom IRanges findOverlaps 
-#' @importFrom IRanges queryHits 
-#' @importFrom IRanges subjectHits 
-#' @importFrom IRanges IRangesList
-#' @importFrom GenomicRanges seqlevels
-#' @importFrom GenomicRanges GRangesList
-#' @importFrom rmisc %|null|%
+#' @importFrom IRanges ranges split mapply findOverlaps queryHits subjectHits IRangesList
+#' @importFrom GenomicRanges seqlevels GRangesList
 NULL
 
 

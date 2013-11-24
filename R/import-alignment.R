@@ -1,8 +1,6 @@
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom parallel mclapply
-#' @importFrom rmisc Compose
-#' @importFrom IRanges runValue
-#' @importFrom IRanges Map
+#' @importFrom IRanges runValue Map
 #' @importFrom GenomicRanges seqlengths<-
 NULL
 
