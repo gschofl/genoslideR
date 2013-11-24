@@ -6,18 +6,8 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
-#' @importFrom Rentrez efetch
-#' @importFrom Rentrez esearch
-#' @importFrom Rentrez esummary
-#' @importFrom Rentrez docsum
-#' @importFrom Rentrez content
-#' @importFrom rmisc strip_ext
-#' @importFrom rmisc xvalue
-#' @importFrom rmisc strsplitN
-#' @importFrom rmisc %||%
-#' @importFrom biofiles as.gbLocation
-#' @importFrom biofiles gbRecord
-#' @importFrom biofiles ranges
+#' @importFrom reutils efetch esearch esummary content xvalue
+#' @importFrom biofiles as.gbLocation gbRecord ranges
 #' @importFrom GenomicRanges mcols<-
 #' @importFrom IRanges IRanges
 NULL
@@ -331,14 +321,11 @@ import_annotation_from_genbank <- function(file, features = c("CDS", "RNA")) {
 # synonym
 import_annotation_from_gbk <- import_annotation_from_genbank
 
-
-create.GRanges <- function (seqid, start, width, strand, names, ...) {
-  
+create.GRanges <- function (seqid, start, width, strand, names, ...) {  
   seqinfo <- tryCatch({
-    x <- docsum(esummary(esearch(seqid, "nuccore")))
-    Seqinfo(seqnames = unlist(x["Caption"], use.names=FALSE),
-            seqlengths = as.numeric(unlist(x["Length"], use.names=FALSE)),
-            genome = unlist(x["Title"], use.names=FALSE))
+    x <- esummary(esearch(seqid, "nuccore"))
+    Seqinfo(seqnames = x$xmlValue('//Caption'), seqlengths = x$xmlValue('//Slen', as="numeric"),
+            genome = x$xmlValue('//Title'))
   }, error = function (e) {
     Seqinfo(seqnames=seqid)
   })

@@ -1,14 +1,5 @@
-#' @importFrom IRanges runValue
-#' @importFrom IRanges ranges
-#' @importFrom IRanges which
-#' @importFrom IRanges order
-#' @importFrom IRanges split
-#' @importFrom IRanges findOverlaps
-#' @importFrom IRanges subjectHits
-#' @importFrom IRanges queryHits
-#' @importFrom GenomicRanges seqnames
-#' @importFrom GenomicRanges GRangesList
-#' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges runValue ranges which order split findOverlaps subjectHits queryHits
+#' @importFrom GenomicRanges seqnames GRangesList GRanges
 #' @importFrom XVector subseq
 NULL
 

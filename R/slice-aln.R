@@ -1,8 +1,6 @@
 #' @importFrom XVector compact
 #' @importFrom GenomicRanges seqlevels
-#' @importFrom Biostrings xscat
-#' @importFrom Biostrings reverse
-#' @importFrom rmisc %|null|%
+#' @importFrom Biostrings xscat reverse
 NULL
 
 

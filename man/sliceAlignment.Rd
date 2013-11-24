@@ -21,7 +21,7 @@
   The ranges passed to \code{sliceAlignment} are converted
   from genomic ranges to alignment ranges. The alignment
   ranges are returned as metadata with the resulting
-  \code{\linkS4Class{DNAStringSetList}} object.
+  \code{\linkS4class{DNAStringSetList}} object.
 }
 \seealso{
   \code{\link{alignment2Genome}},

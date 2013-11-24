@@ -57,7 +57,7 @@ that can be aligned using FSA}
 }
 \seealso{
   \code{\link{alignSegments}},
-  \code{\link{importAlignment},
+  \code{\link{importAlignment}},
   \code{\link{annotatedAlignment}}.
 }
 

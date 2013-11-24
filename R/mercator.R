@@ -1,19 +1,5 @@
-#' @importFrom rmisc compact
-#' @importFrom rmisc compactNA
-#' @importFrom rmisc merge_list
-#' @importFrom rmisc SysCall
-#' @importFrom ape read.dna
-#' @importFrom ape cbind.DNAbin
-#' @importFrom ape dist.dna
-#' @importFrom ape clustal
-#' @importFrom ape muscle
-#' @importFrom ape tcoffee
-#' @importFrom ape nj
-#' @importFrom ape bionj
-#' @importFrom ape fastme.bal
-#' @importFrom ape write.tree
-#' @importFrom parallel detectCores
-#' @importFrom parallel mcmapply
+#' @importFrom ape read.dna cbind.DNAbin dist.dna clustal muscle tcoffee nj bionj fastme.bal write.tree
+#' @importFrom parallel detectCores mcmapply
 NULL
 
 #' Run mercator to build a homology map and create orthologous segments
@@ -48,7 +34,7 @@ NULL
 #' \code{\link{maskSequence}}.
 #' @param wd Working directory. Defaults to the parent directory of
 #' the provided sequence files.
-#' @seealso \code{\link{alignSegments}}, \code{\link{importAlignment},
+#' @seealso \code{\link{alignSegments}}, \code{\link{importAlignment}},
 #' \code{\link{annotatedAlignment}}.
 #' @export
 mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
@@ -58,14 +44,14 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
   
   ## Check dependencies for BLAT
-  hasDependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
-                    "anchors2fa", "blat", "blat2hits"))
+  has_dependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
+                     "anchors2fa", "blat", "blat2hits"))
   
   ## Check dependencies for mercator
-  hasDependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
-                    "makeAlignmentInput", "sdbExport", "muscle", "omap2hmap",
-                    "makeBreakpointGraph", "makeBreakpointAlignmentInput",
-                    "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
+  has_dependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
+                     "makeAlignmentInput", "sdbExport", "muscle", "omap2hmap",
+                     "makeBreakpointGraph", "makeBreakpointAlignmentInput",
+                     "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
   
   # if not specified set the working directory to the parent directory of all
   # sequence files
@@ -505,7 +491,7 @@ run_mercator <- function (wd) {
 }
 
 
-guide_tree <- function (wd) {
+guide_tree <- function(wd) {
   
   merc <- file.path(wd, ".mercator")
   merc_hits <- file.path(merc, "hits")

@@ -1,42 +1,12 @@
-#' @importClassesFrom GenomicRanges GenomicRangesORGRangesList
-#' @importClassesFrom GenomicRanges GenomicRanges
-#' @importClassesFrom GenomicRanges GRanges
-#' @importClassesFrom GenomicRanges GenomicRangesList
-#' @importClassesFrom GenomicRanges GRangesList
-#' @importClassesFrom GenomicRanges Seqinfo
-#' @importClassesFrom IRanges CompressedList
-#' @importClassesFrom IRanges Annotated
-#' @importClassesFrom IRanges List
-#' @importClassesFrom IRanges Vector
-#' @importFrom GenomicRanges GRanges
-#' @importFrom GenomicRanges GRangesList
-#' @importFrom GenomicRanges Seqinfo
-#' @importFrom GenomicRanges seqinfo
-#' @importFrom GenomicRanges "seqinfo<-"
-#' @importFrom GenomicRanges seqnames
-#' @importFrom GenomicRanges genome
-#' @importFrom GenomicRanges seqlengths
-#' @importFrom GenomicRanges seqlevels
-#' @importFrom GenomicRanges ranges
-#' @importFrom GenomicRanges strand
-#' @importFrom GenomicRanges mcols
-#' @importFrom IRanges CharacterList
-#' @importFrom IRanges IntervalTree
-#' @importFrom IRanges metadata
-#' @importFrom IRanges metadata<-
-#' @importFrom IRanges elementMetadata
-#' @importFrom IRanges elementMetadata<-
-#' @importFrom IRanges Rle
-#' @importFrom IRanges start
-#' @importFrom IRanges end
-#' @importFrom IRanges width
-#' @importFrom IRanges elementLengths
-#' @importFrom IRanges lapply
-#' @importFrom IRanges gaps
+#' @importClassesFrom GenomicRanges GenomicRangesORGRangesList GenomicRanges GRanges
+#' @importClassesFrom GenomicRanges GenomicRangesList GRangesList Seqinfo
+#' @importClassesFrom IRanges CompressedList Annotated List Vector
+#' @importFrom GenomicRanges GRanges GRangesList Seqinfo seqinfo "seqinfo<-" seqnames
+#' @importFrom GenomicRanges genome seqlengths seqlevels ranges strand mcols
+#' @importFrom IRanges CharacterList IntervalTree metadata "metadata<-" elementMetadata
+#' @importFrom IRanges "elementMetadata<-" Rle start end width elementLengths lapply gaps
 #' @importFrom Biostrings type
-#' @importFrom biofiles getAccession
-#' @importFrom biofiles getDefinition
-#' @importFrom biofiles qualif
+#' @importFrom biofiles getAccession getDefinition qualif
 NULL
 
 #' Construct an \dQuote{annotationList}.

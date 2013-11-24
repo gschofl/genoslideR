@@ -24,9 +24,8 @@ Imports:
     IRanges,
     methods,
     parallel,
-    Rentrez,
+    reutils,
     RCurl,
-    rmisc,
     XVector
 Collate:
     'annotationList.R'
@@ -49,3 +48,4 @@ Collate:
     'map-alignments.R'
     'Eta.R'
     'aggregate-alignment.R'
+    'genoslideR-utils.R'

@@ -1,10 +1,5 @@
 #' @importFrom Biostrings reverseComplement
-#' @importFrom IRanges unlist
-#' @importFrom IRanges levels
-#' @importFrom IRanges runValue
-#' @importFrom IRanges runLength
-#' @importFrom IRanges PartitioningByWidth
-#' @importFrom IRanges relist
+#' @importFrom IRanges unlist levels runValue runLength PartitioningByWidth relist
 NULL
 
 
@@ -149,7 +144,7 @@ genome2Genome <- function (ranges, aln, targetGenomes = NULL) {
 #' The ranges passed to \code{sliceAlignment} are converted
 #' from genomic ranges to alignment ranges. The alignment ranges
 #' are returned as metadata with the resulting
-#' \code{\linkS4Class{DNAStringSetList}} object.
+#' \code{\linkS4class{DNAStringSetList}} object.
 #' 
 #' @param ranges a \code{\linkS4class{GRanges}} or
 #' \code{\linkS4class{GRangesList}} containing genomic positions.

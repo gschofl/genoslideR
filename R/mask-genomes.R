@@ -15,8 +15,8 @@
 #' @export
 maskSequence <- function(fasta) {
   ## check dependencies
-  hasDependencies(c("awk", "build_lmer_table", "RepeatScout", "filter-stage-1.prl",
-                    "RepeatMasker", "nmerge", "faSoftMask"))
+  has_dependencies(c("awk", "build_lmer_table", "RepeatScout", "filter-stage-1.prl",
+                     "RepeatMasker", "nmerge", "faSoftMask"))
   ncores <- detectCores() - 1 
   masked <- mclapply(fasta, repeatmasker, mc.cores=ncores)
   return(unlist(masked))
