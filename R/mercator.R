@@ -30,6 +30,7 @@ NULL
 #' 'ptt', or 'ftable').
 #' @param glimmeropts Options passed to \code{\link{glimmer3}} if an
 #' \emph{ab initio} annotation is performed.
+#' @param removeOverlappingCDS Exclude overlapping CDS for orthology mapping.
 #' @param mask Softmask sequence before aligning using
 #' \code{\link{maskSequence}}.
 #' @param wd Working directory. Defaults to the parent directory of
@@ -38,49 +39,43 @@ NULL
 #' \code{\link{annotatedAlignment}}.
 #' @export
 mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
-                      glimmeropts = list(o=50, g=110, t=30), 
+                      glimmeropts = list(o=50, g=110, t=30), removeOverlappingCDS = TRUE,
                       mask = TRUE, wd = NULL) {
-  
-  annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gff", "ptt", "ftable"))
-  
+  annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gbk", "gff", "ptt",
+                                       "ftable"))
   ## Check dependencies for BLAT
-  has_dependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors",
-                     "anchors2fa", "blat", "blat2hits"))
-  
+  has_dependencies(c("sdbList", "gffRemoveOverlaps", "gff2anchors", "anchors2fa",
+                     "blat", "blat2hits"))
   ## Check dependencies for mercator
   has_dependencies(c("fa2sdb", "mercator", "sdbAssemble", "phits2constraints",
                      "makeAlignmentInput", "sdbExport", "muscle", "omap2hmap",
                      "makeBreakpointGraph", "makeBreakpointAlignmentInput",
                      "findBreakpoints", "breakMap", "hmap2omap", "omap2coordinates"))
-  
   # if not specified set the working directory to the parent directory of all
   # sequence files
   if (is.null(wd)) {
-    wd <- Reduce(function(l, r) compactNA(r[match(l, r)]), 
+    wd <- Reduce(function(lhs, rhs) compactNA(rhs[match(lhs, rhs)]),
                  strsplit(dirname(seq_files), .Platform$file.sep))
     wd <- normalizePath(paste(wd, collapse=.Platform$file.sep))
   }
-  
   if (!all(is_fasta(seq_files) | is_gbk(seq_files))) {
     stop("Sequences must be provided in FASTA or GenBank format")
   }
-  
   ## Extract FASTA from GenBank files and reassign the gbk files as anno_files
   ## if annotation = 'genbank' and anno_files = NULL
   gbk_files <- which(is_gbk(seq_files))
   if (length(gbk_files) > 0) {
-    if (annotation == 'genbank' && is.null(anno_files))
+    if ((annotation == 'genbank' || annotation == 'gbk') && is.null(anno_files)) {
       anno_files <- seq_files[gbk_files]
+    }
     outdirs <- dirname(seq_files)
     seq_files[gbk_files] <- gbk2fna(seq_files[gbk_files], outdirs[gbk_files])
   }
-  
   # mask sequence files
   if (mask) {
     seq_files <- maskSequence(normalizePath(seq_files))
   }
   seq_files <- normalizePath(seq_files)
-  
   
   # generate annotation if necessary
   if (is.null(anno_files)) {
@@ -112,9 +107,9 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   merc_fas <- file.path(merc, "fasta")
   merc_sdb <- file.path(merc, "sdb")
   merc_hit <- file.path(merc, "hits")
-  for (dir in c(merc_gff, merc_fas, merc_sdb, merc_hit))
-    dir.create(dir, recursive=TRUE)
-  
+  for (dir in c(merc_gff, merc_fas, merc_sdb, merc_hit)) {
+    create_if_not_exists(dir, type="dir", recursive=TRUE)
+  }
   # generate mercator-readable gff files
   gff_files <- gff_for_mercator(anno_files, annotation, merc_gff)
   
@@ -122,14 +117,15 @@ mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
   fna_files <- fna_for_mercator(seq_files, merc_fas)
   
   sdb_files <- file.path(merc_sdb, replace_ext(basename(fna_files), "sdb"))
-  invisible(mapply(function(x, y)
-    system(paste0("fa2sdb ", x, " < ", y)), x = sdb_files, y = fna_files))
+  invisible(mapply(function(x, y) {
+    system(paste0("fa2sdb ", x, " < ", y))
+  }, x = sdb_files, y = fna_files))
   
   # compare all of the exon sequences pairwise and generate the proper
   # input files for Mercator.
   reciprocal_blat(genomes = strip_ext(basename(fna_files)),
-                  sdb = merc_sdb, gff = merc_gff, out = merc_hit,
-                  sep = "-", mercator = TRUE)
+                  merc_sdb = merc_sdb, merc_gff = merc_gff, merc_out = merc_hit,
+                  sep = "-", removeOverlappingCDS = removeOverlappingCDS)
   
   # run Mercator on the input files.
   # This generates a directory 'segments' with subdirectories
@@ -146,14 +142,14 @@ gff_for_mercator <- function (f, type, wd) {
   if (missing(wd)) {
     stop("No working directory provided")
   }
-  type <- match.arg(type, c("gff", "ptt", "genbank", "ftable","glimmer3"))
+  type <- match.arg(type, c("gff", "ptt", "genbank", "gbk", "ftable","glimmer3"))
   out <- switch(type,
                 gff=gff2gff(f, wd),
                 ptt=ptt2gff(f, wd),
                 genbank=gbk2gff(f, wd),
+                gbk=gbk2gff(f, wd),
                 ftable=ftb2gff(f, wd),
                 glimmer3=glimmer2gff(f, wd))
-  
   return(invisible(out))
 }
 
@@ -332,7 +328,6 @@ gbk2gff <- function (f, wd) {
     outfiles <- c(outfiles, outfile)
     rm(gbk,gff) ## free memory
   }
-  
   return(invisible(outfiles))
 }
 
@@ -445,15 +440,13 @@ gbk2fna <- function (f, wd) {
 
 
 run_mercator <- function (wd) {
-  
-  merc <- file.path(wd, ".mercator")
+  merc     <- file.path(wd, ".mercator")
   merc_fna <- file.path(merc, "fasta")
   merc_sdb <- file.path(merc, "sdb")
   merc_hit <- file.path(merc, "hits")
   merc_out <- file.path(merc, "out")
   dir.create(merc_out)
   genomes <- strip_ext(dir(merc_fna))
-  
   system(sprintf("mercator -i %s -o %s %s", 
                  merc_hit, merc_out, paste(genomes, collapse=' ')))
   
@@ -492,28 +485,27 @@ run_mercator <- function (wd) {
 
 
 guide_tree <- function(wd) {
-  
   merc <- file.path(wd, ".mercator")
   merc_hits <- file.path(merc, "hits")
   merc_out <- file.path(merc, "out")
-  
   # check if all necessary files are present  
   f <- dir(merc_out, full.names=TRUE)
-  if (sum(runs_pos <- grepl(pattern="\\<runs\\>", basename(f))) != 1L)
+  if (sum(runs_pos <- grepl(pattern="\\<runs\\>", basename(f))) != 1L) {
     stop("'runs' file missing")
-  if (!any(grepl(pattern="\\.sdb\\>", basename(f))))
+  }
+  if (!any(grepl(pattern="\\.sdb\\>", basename(f)))) {
     stop("sdb-files missing")
-  
+  }
   merc_tree <- file.path(merc_out, "tree")
-  dir.create(merc_tree)
+  create_if_not_exists(merc_tree, type="dir")
   
   runs <- read.table(f[runs_pos], header=FALSE, colClasses="integer")
   runs <- runs[complete.cases(runs),]
-  names(runs) <- scan(f[grepl("genomes", f)], what="character", quiet=TRUE)
+  names(runs) <- scan(f[grepl("genomes$", f)], what="character", quiet=TRUE)
   
-  if (nrow(runs) == 0)
+  if (nrow(runs) == 0) {
     stop("There are no orthologous genes to generate a guide tree")
-  
+  }
   if (nrow(runs) > 20) {
     idx <- sample(seq_len(nrow(runs)), 20, replace = FALSE)
     runs <- runs[idx,]

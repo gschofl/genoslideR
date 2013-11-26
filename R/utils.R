@@ -134,14 +134,13 @@ strsplitN <- function (x, split, n, from = "start", collapse = split, ...) {
 #' @keywords internal
 linebreak <- function(s, width = getOption("width") - 2,
                       indent = 0, offset = 0, split = " ",
-                      FORCE = FALSE, FULL_FORCE = FALSE)
-{
-  if (!is.character(s)) 
+                      FORCE = FALSE, FULL_FORCE = FALSE) {
+  if (!is.character(s)) {
     s <- as.character(s)
-  
-  if (length(s) == 0L)
+  }
+  if (all_empty(s)) {
     return("")
-  
+  }
   .first_iteration <- TRUE
   # set indent string to "" if a negative value is given
   # this lets us shrink the available width for the first line by that value
@@ -242,6 +241,23 @@ strip_ext <- function (file, sep="\\.", level=0) {
   } else {
     stop(sprintf("Level %s is invalid. Must be 0, 1, 2, ...", sQuote(level)))
   }
+}
+
+
+create_if_not_exists <- function(path, type="dir", ...) {
+  type <- match.arg(type, c("dir", "file"))
+  assert_that(is.string(path))
+  if (!file.exists(path)) {
+    success <- tryCatch(
+      switch(type, dir=dir.create(path, ...), file=file.create(path, ...)),
+      warning = function(w) FALSE
+    )
+    return(success)
+  }
+  TRUE
+}
+on_failure(create_if_not_exists) <- function(call, env) {
+  paste0("The file/directory ", deparse(call$path), " could not be created")
 }
 
 

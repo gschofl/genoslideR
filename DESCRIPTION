@@ -22,11 +22,17 @@ Imports:
     genomeIntervals,
     GenomicRanges,
     IRanges,
+    Matrix,
     methods,
     parallel,
+    plyr,
     reutils,
     RCurl,
+    stringr,
     XVector
+Suggests:
+    phangorn,
+    gplots
 Collate:
     'annotationList.R'
     'annotatedAlignment.R'
@@ -49,3 +55,6 @@ Collate:
     'Eta.R'
     'aggregate-alignment.R'
     'genoslideR-utils.R'
+    'blat-to-hits.R'
+    'orthology-utils.R'
+    'orthology.R'
