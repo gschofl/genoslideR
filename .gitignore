@@ -1,9 +1,12 @@
 .Rproj.user
 .Rhistory
 .RData
-genoslideR.Rproj
 data/
 stuff/
-init.R
+cache/
+init.[rR]
+scratch.[rR]
 *.o
 *.so
+*.html
+*.Rmd
