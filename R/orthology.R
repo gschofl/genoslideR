@@ -182,12 +182,12 @@ orthologyMatrix <- function(base_names, blat_dir, cutoff=1e-3, name_sep="-", log
   )
 }
 
-##' Plot an orthology matrix
-##' 
-##' @param omat A list of orthology matrices.
-##' @param i Index.
-##' @method plot OrthoMatrix
-##' @S3method plot OrthoMatrix
+#' Plot an orthology matrix
+#' 
+#' @param omat A list of orthology matrices.
+#' @param i Index.
+#' @method plot OrthoMatrix
+#' @export
 plot.OrthoMatrix <- function(x, i=NULL, ...) {
   plot.omat <- function(x, i) {
     xlab <- attr(x, "labels")[attr(x, "combinations")[2,i]]
@@ -355,7 +355,7 @@ check_conflicts <- function(merged_df) {
 #### Methods for OrthoFrame objects ####
 
 #' @method print OrthoFrame
-#' @S3method print OrthoFrame
+#' @export
 print.OrthoFrame <- function(x, ...) {
   NextMethod()
   cat("\nConflicts that may need to be solved manually:\n")
@@ -370,7 +370,7 @@ labels <- function(object, ...) {
 }
 
 #' @method labels OrthoFrame
-#' @S3method labels OrthoFrame
+#' @export
 labels.OrthoFrame <- function(object, ...) {
   attr(object, "labels")
 }
@@ -382,7 +382,7 @@ labels.OrthoFrame <- function(object, ...) {
 }
 
 #' @method "labels<-" OrthoFrame
-#' @S3method "labels<-" OrthoFrame
+#' @export
 `labels<-.OrthoFrame` <- function(x, value) {
   if (ncol(x) != length(value)) {
     stop("Number of labels must corresspond to the number of columns in the OrthoFrame")
@@ -398,7 +398,7 @@ anchors <- function(object, ...) {
 }
 
 #' @method anchors OrthoFrame
-#' @S3method anchors OrthoFrame
+#' @export
 anchors.OrthoFrame <- function(object) {
   res <- list()
   anchors <- attr(object, "anchors")
@@ -410,7 +410,7 @@ anchors.OrthoFrame <- function(object) {
 }
 
 #' @method $ OrthoFrame
-#' @S3method $ OrthoFrame
+#' @export
 `$.OrthoFrame` <- function(x, name) {
   if (nchar(name) != ncol(x) || !all(strsplit(name, "")[[1]] %in% c("0","1","."))) {
     NextMethod()
@@ -434,7 +434,7 @@ anchors.OrthoFrame <- function(object) {
 }
 
 #' @method [[ OrthoFrame
-#' @S3method [[ OrthoFrame
+#' @export
 `[[.OrthoFrame` <- function(x, ..., exact = TRUE) {
   arg <- list(...)[[1L]]
   if (is.character(arg) && nchar(arg) == ncol(x) && all(strsplit(arg, "")[[1]] %in% c("0","1","."))) {

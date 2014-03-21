@@ -58,6 +58,8 @@ Compose <- function (...) {
 
 all_empty <- Compose("all", "are_empty")
 
+usplit <- Compose("unlist", "strsplit")
+
 merge_list <- function(x, y) {
   if (length(x) == 0) return(y)
   if (length(y) == 0) return(x) 
@@ -222,11 +224,11 @@ linebreak <- function(s, width = getOption("width") - 2,
 #' The default (0) strips all, 1 strips the last one, 2 strips the last two,
 #' and so on.
 #' @keywords internal
-strip_ext <- function (file, sep="\\.", level=0) {
+strip_ext <- function(file, sep = "\\.", level = 0L) {
   assert_that(!missing(file), is.character(file))
   if (level == 0L) {
     # level 0 ditches everything that comes after a dot
-    vapply(file, function(x) usp(x, sep)[1L], "", USE.NAMES = FALSE)
+    vapply(file, function(f) usplit(f, split = sep)[1L], "", USE.NAMES = FALSE)
   } else if (level > 0L) {
     # level 1 removes the very last extension: file.xyz.abc > file.xyz
     # level 2: file.xyz.abc > file
@@ -236,8 +238,8 @@ strip_ext <- function (file, sep="\\.", level=0) {
     # reset zero counts to 1
     count <- ifelse(count < 1, 1, count)
     unlist(Map(function(x, lvl) {
-      paste0(usp(x, sep)[ seq_len(lvl) ], collapse = gsub('\\', '', sep, fixed=TRUE))
-    }, x=file, lvl=count, USE.NAMES=FALSE))
+      paste0(usplit(x, split = sep)[seq_len(lvl)], collapse = gsub('\\', '', sep, fixed = TRUE))
+    }, x = file, lvl = count, USE.NAMES = FALSE))
   } else {
     stop(sprintf("Level %s is invalid. Must be 0, 1, 2, ...", sQuote(level)))
   }

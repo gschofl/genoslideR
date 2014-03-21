@@ -1,13 +1,13 @@
 Package: genoslideR
 Type: Package
-Title: Handle multiple alignments with annotation.
-Version: 0.1-1
+Title: Create and manipulate multiple genome alignments with annotation.
+Version: 0.1.1
 Date: 2013-02-25
-Author: Gerhard Schoefl <gschof@yahoo.de>,
+Author: Gerhard Schöfl <gerhard.schofl@gmail.com>,
     Jochen Bick <j.bick@uni-jena.de>,
     Ding Wang <d.wang@uni-jena.de>
-Maintainer: Gerhard Schoefl <gschof@yahoo.de>
-Description: 
+Maintainer: Gerhard Schöfl <gerhard.schofl@gmail.com>
+Description: Create and manipulate multiple genome alignments with annotation.
 License: MIT
 Depends:
     R (>= 2.15),
@@ -34,27 +34,27 @@ Suggests:
     phangorn,
     gplots
 Collate:
+    'Eta.R'
+    'RcppExports.R'
+    'aggregate-alignment.R'
+    'align-segments.R'
+    'aln2map.R'
     'annotationList.R'
     'annotatedAlignment.R'
+    'blat-to-hits.R'
+    'genoslideR-utils.R'
     'genoslideR.R'
     'glimmer.R'
     'import-alignment.R'
     'import-annotation.R'
+    'map-alignments.R'
+    'map2aln.R'
     'mask-genomes.R'
     'mercator.R'
-    'reciprocal-blat.R'
-    'utils.R'
-    'utility-functions.R'
     'merge-mercator-segments.R'
-    'align-segments.R'
-    'RcppExports.R'
-    'map2aln.R'
-    'aln2map.R'
-    'slice-aln.R'
-    'map-alignments.R'
-    'Eta.R'
-    'aggregate-alignment.R'
-    'genoslideR-utils.R'
-    'blat-to-hits.R'
     'orthology-utils.R'
     'orthology.R'
+    'reciprocal-blat.R'
+    'slice-aln.R'
+    'utility-functions.R'
+    'utils.R'

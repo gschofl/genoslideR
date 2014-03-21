@@ -10,17 +10,31 @@ NULL
 #' multiple alignments stored as an \dQuote{\linkS4class{XStringSet}} object
 #' and genomic annotations stored as an \dQuote{\linkS4class{annotationList}}
 #' object.
+#' @slot annotation An \code{\linkS4class{annotationList}} object.
+#' @slot alignment An \code{\linkS4class{XStringSet}} object.
 #' @export
 setClass("annotatedAlignment",
-         representation(annotation="annotationList",
-                        alignment="XStringSet"))
+         slots = list(
+           annotation = "annotationList",
+           alignment = "XStringSet"
+         )
+)
 
 
+#' Construct an \sQuote{annotatedAlignment}.
+#' 
 #' @param alnpath Path to a directory containing mercator segments,
 #' a single file in mfa (multi fasta) or maf (multiple alignment file)
 #' format containing the genome aligment.
-#' @inheritParams importAnnotation
-#' @seealso \code{\link{mercator}}, \code{\link{alignSegments}}.
+#' @param annopath Path to annotation files.
+#' @param type Type of annotation. Supported file types are \emph{gff},
+#' \emph{ptt}, \emph{ftb} (NCBI feature table), \emph{genbank}/\emph{gbk},
+#' and \emph{table} (custom tab-delimted annotation files, minimally containing
+#' \emph{start} and \emph{end} values).
+#' @param ... Optionally \code{features} (default: CDS, RNA), \code{seqid}
+#' (sequence identifier, e.g. NCBI accession numbers), and \code{sep}.
+#' @seealso \code{\link{mercator}}, \code{\link{alignSegments}},
+#' \code{\linkS4class{annotatedAlignment}}.
 #' @export
 annotatedAlignment <- function (alnpath, annopath, type, ...) {
   
@@ -56,7 +70,7 @@ annotatedAlignment <- function (alnpath, annopath, type, ...) {
 }
 
 
-setValidity("annotatedAlignment", function (object) {
+setValidity("annotatedAlignment", function(object) {
   
   n <- names(object)
   if (!all(n$annotation %in% n$alignment)) {

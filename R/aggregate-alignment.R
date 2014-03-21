@@ -42,7 +42,7 @@ aggregateAlignment <- function(aln, ranges = NULL, window = NULL, step = NULL,
 }
 
 
-aggregateRanges <- function (dss, ranges, f, ...) {
+aggregateRanges <- function(dss, ranges, f, ...) {
   
   space <- NULL
   if (is(ranges, "IRangesList")) {

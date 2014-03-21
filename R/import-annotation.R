@@ -6,7 +6,7 @@
 # Metadata neccessary for annotationList
 # accession/identifier, description, length
 
-#' @importFrom reutils efetch esearch esummary content xvalue
+#' @importFrom reutils efetch esearch esummary content
 #' @importFrom biofiles as.gbLocation gbRecord ranges
 #' @importFrom GenomicRanges mcols<-
 #' @importFrom IRanges IRanges
@@ -102,7 +102,7 @@ import_annotation_from_ptt <- function(file, seqid = NULL) {
   if (is.null(seqid)) {
     # attempt to fetch accession number
     x <- content(efetch(proteinID[1], "protein", "gp", "xml")) 
-    x <- xvalue(x, '//GBQualifier[contains(GBQualifier_name, "coded_by")]/GBQualifier_value')
+    x <- x$xmlValue('//GBQualifier[contains(GBQualifier_name, "coded_by")]/GBQualifier_value')
     if (all_empty(x)) {
       stop("No accession number could be retrieved as identifier for these annotations. Provide an identifier.")
     } else {
