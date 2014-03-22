@@ -3,7 +3,7 @@
 \alias{strip_ext}
 \title{Strip file extensions}
 \usage{
-strip_ext(file, sep = "\\\\.", level = 0)
+strip_ext(file, sep = "\\\\.", level = 0L)
 }
 \arguments{
 \item{file}{The file name(s).}

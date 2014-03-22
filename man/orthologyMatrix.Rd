@@ -3,17 +3,22 @@
 \alias{orthologyMatrix}
 \title{Construct orthology matrices}
 \usage{
-orthologyMatrix(base_names, blat_dir, cutoff = 0.001, name_sep = "-",
-  log = TRUE)
+orthologyMatrix(blat_dir, base_names = NULL, pident_threshold = 60,
+  paln_threshold = 40, name_sep = "-", log = TRUE)
 }
 \arguments{
-\item{base_names}{Species for which an orthology matrix should be
-constructed. Must correspond to the relevant filenames minus extension.}
-
 \item{blat_dir}{Directory where the anchor and hit files produced by
 \code{link{mercator}} live.}
 
-\item{cutoff}{Evalue cutoff.}
+\item{base_names}{Species for which an orthology matrix should be
+constructed. Must correspond to the relevant filenames minus extension.
+If \code{NULL} all are selected}
+
+\item{pident_threshold}{Threshold for (cumulative) percentage of sequence
+identity}
+
+\item{paln_threshold}{Threshhold for (cumulative) percentage of alignment
+length (query coverage).}
 
 \item{name_sep}{String that separates two compared species in filenames.}
 

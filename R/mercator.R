@@ -1,4 +1,4 @@
-#' @importFrom ape read.dna cbind.DNAbin dist.dna clustal muscle tcoffee nj bionj fastme.bal write.tree
+#' @importFrom ape read.dna cbind.DNAbin dist.dna clustal muscle tcoffee nj bionj fastme.bal write.tree labels.DNAbin
 #' @importFrom parallel detectCores mcmapply
 NULL
 
@@ -38,9 +38,9 @@ NULL
 #' @seealso \code{\link{alignSegments}}, \code{\link{importAlignment}},
 #' \code{\link{annotatedAlignment}}.
 #' @export
-mercator <- function (seq_files, anno_files = NULL, anno_type = "glimmer3",
-                      glimmeropts = list(o=50, g=110, t=30), removeOverlappingCDS = TRUE,
-                      mask = TRUE, wd = NULL) {
+mercator <- function(seq_files, anno_files = NULL, anno_type = "glimmer3",
+                     glimmeropts = list(o=50, g=110, t=30), removeOverlappingCDS = TRUE,
+                     mask = TRUE, wd = NULL) {
   annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gbk", "gff", "ptt",
                                        "ftable"))
   ## Check dependencies for BLAT
@@ -144,12 +144,12 @@ gff_for_mercator <- function (f, type, wd) {
   }
   type <- match.arg(type, c("gff", "ptt", "genbank", "gbk", "ftable","glimmer3"))
   out <- switch(type,
-                gff=gff2gff(f, wd),
-                ptt=ptt2gff(f, wd),
-                genbank=gbk2gff(f, wd),
-                gbk=gbk2gff(f, wd),
-                ftable=ftb2gff(f, wd),
-                glimmer3=glimmer2gff(f, wd))
+                gff      = gff2gff(f, wd),
+                ptt      = ptt2gff(f, wd),
+                genbank  = gbk2gff(f, wd),
+                gbk      = gbk2gff(f, wd),
+                ftable   = ftb2gff(f, wd),
+                glimmer3 = glimmer2gff(f, wd))
   return(invisible(out))
 }
 
@@ -292,8 +292,8 @@ ftb2gff <- function (f, wd) {
 }
 
 
-gbk2gff <- function (f, wd) {
-  outfiles <- character()
+gbk2gff <- function(f, wd) {
+  outfiles <- character(0)
   wd <- if (length(wd) == 1) rep(wd, length(f)) else wd
   for (i in seq_along(f)) {
     gbk <- readLines(f[i])
@@ -326,7 +326,7 @@ gbk2gff <- function (f, wd) {
     write.table(gff, outfile, quote=FALSE, sep="\t", row.names=FALSE, 
                 col.names=FALSE)
     outfiles <- c(outfiles, outfile)
-    rm(gbk,gff) ## free memory
+    rm(gbk, gff) ## free memory
   }
   return(invisible(outfiles))
 }
@@ -403,9 +403,9 @@ fna2fna <- function (f, wd) {
     seqid <- strip_ext(basename(f[i]))
     outfile <- file.path(wd[i], paste0(seqid, ".fna"))
     outcon <- file(outfile, open="w")
-    on.exit(close(outcon))
     fna[1] <- sprintf(">%s", seqid)
     writeLines(fna, outcon)
+    close(outcon)
     outfiles <- c(outfiles, outfile)
   }
   return(invisible(outfiles))
@@ -578,7 +578,7 @@ make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") 
   
   o <- NULL
   for (aln in alignment) {
-    o <- c(o, list(order(labels(aln))))
+    o <- c(o, list(order(labels.DNAbin(aln))))
   }
   for (i in seq_along(alignment)) {
     alignment[[i]] <- alignment[[i]][o[[i]],]
@@ -594,7 +594,7 @@ make_tree <- function (fna_dir, align="muscle", dist.model="K80", tree="bionj") 
   return(tree)
 }
 
-find_breakpoints <- function (wd) {
+find_breakpoints <- function(wd) {
   
   merc <- file.path(wd, ".mercator")
   merc_out <- file.path(merc, "out")
@@ -626,10 +626,10 @@ find_breakpoints <- function (wd) {
 }
 
 
-fsaAlignSegmentDirs <- function (initdir = ".", seqfile = "seqs.fasta",
-                                 outfile = "fsa.mfa", constraints = "cons",
-                                 skip.completed = TRUE, fsa.opts = list(),
-                                 ncores = detectCores()) {
+fsaAlignSegmentDirs <- function(initdir = ".", seqfile = "seqs.fasta",
+                                outfile = "fsa.mfa", constraints = "cons",
+                                skip.completed = TRUE, fsa.opts = list(),
+                                ncores = detectCores()) {
   assert_that(has_command('fsa')) 
   segments <- normalizePath(dir(initdir, "^\\d+$", full.names=TRUE))
   segments <- segments[order(as.numeric(split_path(segments)))]

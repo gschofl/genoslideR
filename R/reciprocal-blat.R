@@ -54,7 +54,8 @@ pairwiseCombine <- function (x) {
 
 
 reciprocal_blat <- function(genomes, merc_sdb, merc_gff, merc_out,
-                            sep = "-", removeOverlappingCDS = FALSE) {
+                            sep = "-", removeOverlappingCDS = FALSE,
+                            opts = list()) {
   if (length(genomes) < 2) {
     stop("At least two genomes must be specified")
   }
@@ -111,7 +112,10 @@ reciprocal_blat <- function(genomes, merc_sdb, merc_gff, merc_out,
     protein2 <- file.path(merc_out, paste0(genome2, ".proteins.fa"))
     blat_output <- file.path(merc_out, paste0(genome1, sep, genome2, ".blat"))
     # protein2 is the database, protein1 is the query
-    system(sprintf("blat -t=prot -q=prot -out=blast8 %s %s %s", protein2, protein1, blat_output))
+    opts <- paste0(sprintf("-%s=%s", names(opts), unlist(opts)), collapse = " ")
+    blat_exec <- sprintf("blat -t=prot -q=prot -out=blast8 %s %s %s %s",
+                         opts, protein2, protein1, blat_output)
+    system(blat_exec)
     if (removeOverlappingCDS) {
       hit_output <- replace_ext(blat_output, "hits", level = 1)
       system(sprintf("blat2hits < %s > %s", blat_output, hit_output))

@@ -4,39 +4,164 @@
 NULL
 
 
-##' Construct orthology matrices
-##' 
-##' Constructs pairwise orthology matrices for all combinations of species
-##' as provided by the \code{base_names} argument based on reciprocal best
-##' BLAT hits. Use \code{\link{mergeOrthologyMatrix}} to merge these
-##' pairwise comparison into a single data frame.
-##' 
-##' @param base_names Species for which an orthology matrix should be
-##' constructed. Must correspond to the relevant filenames minus extension.
-##' @param blat_dir Directory where the anchor and hit files produced by
-##' \code{link{mercator}} live.
-##' @param cutoff Evalue cutoff.
-##' @param name_sep String that separates two compared species in filenames.
-##' @param log Write logfiles
-##' 
-##' @return A list of class \sQuote{orthoMatrix}, which is essentially a 
-##' list of \code{\link[Matrix]{dgCMatrix}}es with attributes
-##' \sQuote{labels}, \sQuote{nGenes}, and \sQuote{combinations} attached.
-##' 
-##' @export
-orthologyMatrix <- function(base_names, blat_dir, cutoff=1e-3, name_sep="-", log=TRUE) {  
-  hitfiles <- dir(blat_dir, "*hits$", full.names=TRUE)
+#' Find Reciprocal Best Hits using Blat 
+#' 
+#' @details
+#' \code{rbh} will create a hidden directory \sQuote{.rbh}
+#' in the parent directory of the submitted sequence files and place
+#' all results of the intermediate computational steps in this directory.
+#' 
+#' The results of a \code{rbh} run are stored in a directory
+#' \sQuote{rbh} in the parent directory of the submitted sequence files.
+#' 
+#' @param seq_files Path to sequence files ('fasta' or 'genbank').
+#' @param anno_files (Optional) Path to annotation files. If no
+#' annotation files are provided an \emph{ab initio} annotation
+#' using \code{\link{glimmer3}} is performed.
+#' @param anno_type Type of annotation ('glimmer3', 'genbank', 'gff', 
+#' 'ptt', or 'ftable').
+#' @param blatopts Options passed to \code{blat}.
+#' @param glimmeropts Options passed to \code{\link{glimmer3}} if an
+#' \emph{ab initio} annotation is performed.
+#' @param wd Working directory. Defaults to the parent directory of
+#' the provided sequence files.
+#' @export
+rbh <- function(seq_files,
+                anno_files = NULL,
+                anno_type = "glimmer3",
+                blatopts = list(),
+                glimmeropts = list(o=50, g=110, t=30),
+                wd = NULL) {
+  annotation <- match.arg(anno_type, c("glimmer3", "genbank", "gbk", "gff", "ptt", "ftable"))
+  ## Check dependencies for BLAT
+  has_dependencies(c("blat", "fa2sdb", "sdbList", "anchors2fa"))
+  # if not specified set the working directory to the parent directory of all
+  # sequence files
+  if (is.null(wd)) {
+    wd <- Reduce(function(lhs, rhs) compactNA(rhs[match(lhs, rhs)]),
+                 strsplit(dirname(seq_files), .Platform$file.sep))
+    wd <- normalizePath(paste(wd, collapse = .Platform$file.sep))
+  }
+  if (!all(is_fasta(seq_files) | is_gbk(seq_files))) {
+    stop("Sequences must be provided in FASTA or GenBank format")
+  }
+  ## Extract FASTA from GenBank files and reassign the gbk files as anno_files
+  ## if annotation = 'genbank' and anno_files = NULL
+  gbk_files <- which(is_gbk(seq_files))
+  if (length(gbk_files) > 0) {
+    if ((annotation == 'genbank' || annotation == 'gbk') && is.null(anno_files)) {
+      anno_files <- seq_files[gbk_files]
+    }
+    outdirs <- dirname(seq_files)
+    seq_files[gbk_files] <- gbk2fna(seq_files[gbk_files], outdirs[gbk_files])
+  }
+  seq_files <- normalizePath(seq_files)
+  
+  # generate annotation if necessary
+  if (is.null(anno_files)) {
+    if (annotation != "glimmer3")
+      stop("No annotation files provided")
+    else
+      anno_files <- glimmer3(seq_files, opts = glimmeropts)
+  }
+  anno_files <- normalizePath(anno_files)
+  assert_that(length(anno_files) == length(seq_files))
+  if (any(strip_ext(basename(anno_files)) %ni% strip_ext(basename(seq_files)))) {
+    stop("Names of annotation and sequence files don't match.")
+  }
+  rbh <- file.path(wd, ".rbh")
+  if (file.exists(rbh)) {
+    warning("A '.rbh' directory exists in ", wd, immediate. = TRUE, call. = FALSE)
+    ans <- readline("Overwrite [y/n]? ")
+    if (ans == "y") {
+      unlink(rbh, recursive = TRUE)
+    } else {
+      return(NULL)
+    }
+  }
+  
+  rbh_gff <- file.path(rbh, "gff")
+  rbh_fas <- file.path(rbh, "fasta")
+  rbh_sdb <- file.path(rbh, "sdb")
+  rbh_hit <- file.path(rbh, "hits")
+  for (dir in c(rbh_gff, rbh_fas, rbh_sdb, rbh_hit)) {
+    create_if_not_exists(dir, type = "dir", recursive = TRUE)
+  }
+  # generate mercator-readable gff files
+  gff_files <- gff_for_mercator(f = anno_files, type = annotation, wd = rbh_gff)
+  
+  # generate mercator-readable fasta files
+  fna_files <- fna_for_mercator(f = seq_files, wd = rbh_fas)
+  
+  sdb_files <- file.path(rbh_sdb, replace_ext(basename(fna_files), "sdb"))
+  invisible(mapply(function(x, y) {
+    system(paste0("fa2sdb ", x, " < ", y))
+  }, x = sdb_files, y = fna_files))
+  
+  # compare all of the CDS sequences
+  reciprocal_blat(genomes = strip_ext(basename(fna_files)),
+                  merc_sdb = rbh_sdb, merc_gff = rbh_gff, merc_out = rbh_hit,
+                  sep = "-", removeOverlappingCDS = FALSE, opts = blatopts)
+  
+  rbh_dir <- file.path(wd, "rbh")
+  if (file.exists(rbh_dir)) {
+    unlink(rbh_dir, recursive=TRUE)
+  }
+  dir.create(rbh_dir)
+  file.copy(from = dir(rbh_hit, full.names = TRUE), to = rbh_dir)
+  message("Next use 'orthologyMatrix()' to contruct an orthology matrix")
+  return(rbh_dir)
+}
+
+
+#' Construct orthology matrices
+#' 
+#' Constructs pairwise orthology matrices for all combinations of species
+#' as provided by the \code{base_names} argument based on reciprocal best
+#' BLAT hits. Use \code{\link{mergeOrthologyMatrix}} to merge these
+#' pairwise comparison into a single data frame.
+#' 
+#' @param blat_dir Directory where the anchor and hit files produced by
+#' \code{link{mercator}} live.
+#' @param base_names Species for which an orthology matrix should be
+#' constructed. Must correspond to the relevant filenames minus extension.
+#' If \code{NULL} all are selected
+#' @param pident_threshold Threshold for (cumulative) percentage of sequence
+#' identity
+#' @param paln_threshold Threshhold for (cumulative) percentage of alignment
+#' length (query coverage).
+#' @param name_sep String that separates two compared species in filenames.
+#' @param log Write logfiles
+#' 
+#' @return A list of class \sQuote{orthoMatrix}, which is essentially a 
+#' list of \code{\link[Matrix]{dgCMatrix}}es with attributes
+#' \sQuote{labels}, \sQuote{nGenes}, and \sQuote{combinations} attached.
+#' 
+#' @export
+orthologyMatrix <- function(blat_dir,
+                            base_names = NULL,
+                            pident_threshold = 60,
+                            paln_threshold = 40,
+                            name_sep = "-",
+                            log = TRUE) {
+  if (is.null(base_names)) {
+    base_names <- strsplitN(basename(dir(blat_dir, "*anchors$", full.names = TRUE)),
+                            split = "\\.", n = 1)
+  }
+  hitfiles <- dir(blat_dir, "*hits$", full.names = TRUE)
   anchorfiles <- normalizePath(paste0(file.path(blat_dir, base_names), ".anchors"))
   anchors <- count_lines(anchorfiles)
-  gene_num <- as.numeric(str_trim(str_extract(string=anchors, " *\\d+")))
-  species <- data.frame(stringsAsFactors=FALSE, base_names=base_names, gene_num=gene_num)
+  gene_num <- as.numeric(str_trim(str_extract(string = anchors, " *\\d+")))
+  species <- data.frame(stringsAsFactors = FALSE, base_names = base_names, gene_num = gene_num)
   
   Omat <- list()
   combinations <- utils::combn(seq_len(nrow(species)), 2)
   for (combi in seq_len(ncol(combinations))) {
+    #combi <- 1
     if (log) {
-      log_file <- file.path(sprintf("logs/orthomat%s.log", combi))
-      create_if_not_exists(log_file, type="file")
+      log_file <- file.path(blat_dir, "logs", sprintf("orthology_matrix_%s.log", combi))
+      create_if_not_exists(dirname(log_file), type = "dir")
+      create_if_not_exists(log_file, type = "file")
     }
     i <- combinations[1, combi] 
     j <- combinations[2, combi]
@@ -48,18 +173,14 @@ orthologyMatrix <- function(base_names, blat_dir, cutoff=1e-3, name_sep="-", log
     label_j   <- species[j, 1]
     hits_ij   <- read.table(file_ij, as.is=TRUE) 
     hits_ji   <- read.table(file_ji, as.is=TRUE)
-    names(hits_ij) <- names(hits_ji) <- c("query", "subject", "pct", "score", "eval")
-    
-    if (length(hits_ij[, 1]) != length(hits_ji[, 2]) ||
-          length(hits_ij[, 2]) != length(hits_ji[, 1])) {
-      message(sprintf("Unequal gene length in\n\t%s\nand\n\t%s\ncombination %s",
-                      basename(file_ij), basename(file_ji), combi))
-    }  
+    names(hits_ij) <- names(hits_ji) <- c("query", "subject", "pident", "paln", "score", "eval")
     ## remove all hits with an e-value below the cutoff
-    if (sum(bad_hits <- hits_ij[, "eval"] > cutoff) > 0L) {
+    if (sum(bad_hits <- hits_ij$pident < pident_threshold |
+                        hits_ij$paln < paln_threshold) > 0L) {
       hits_ij <- hits_ij[!bad_hits, ]  
     }  
-    if (sum(bad_hits <- hits_ji[, "eval"] > cutoff) > 0L) {
+    if (sum(bad_hits <- hits_ji$pident < pident_threshold |
+                        hits_ji$paln < paln_threshold) > 0L) {
       hits_ji <- hits_ji[!bad_hits, ]
     }
     # write to logfile
@@ -74,52 +195,48 @@ orthologyMatrix <- function(base_names, blat_dir, cutoff=1e-3, name_sep="-", log
     # split by subject i and query j
     ji_s_split <- dlply(hits_ji, .(subject))
     ji_q_split <- dlply(hits_ji, .(query))
-    
-    omat <- Matrix(data=FALSE, nrow=n_genes_i, ncol=n_genes_j,
-                   dimnames=list(seq_len(n_genes_i), seq_len(n_genes_j)))
-    
-    cat(sprintf("Extracting orthologs from:\n\t%s (%s valid queries)\nvs.\n\t%s (%s valid queries) ...\n\n",
+    omat <- Matrix(data = FALSE, nrow = n_genes_i, ncol = n_genes_j,
+                   dimnames = list(seq_len(n_genes_i), seq_len(n_genes_j)))
+    cat(sprintf("Extracting orthologs from:\n\t%s (%s valid queries) vs. %s (%s valid queries) ...\n\n",
                 label_i, length(valid_queries_i), label_j, length(valid_queries_j)))
     
     if (log) {
-      cat(sprintf("Logging %s vs %s\n\n", label_i, label_j), file=log_file)
+      cat(sprintf("Logging %s vs %s\n\n", label_i, label_j), file = log_file)
     }
     for (i in seq_along(ij_q_split)) {
       if (log) {
-        cat(sprintf("Split #%s:\n", i), file=log_file, append=TRUE)
+        cat(sprintf("Split #%s:\n", i), file = log_file, append = TRUE)
       }
       ## catch an error thrown if a reciprocal match is missing because
-      ## it has been unilaterally filtered by the evalue cutoff
+      ## it has been unilaterally filtered by the pident and paln cutoffs
       tryCatch({
         qi <- ij_q_split[[i]]
-        si_pat <- paste(paste0("\\<", unique(qi$subject), "\\>"), collapse="|")
+        si_pat <- paste0(paste0("\\<", unique(qi$subject), "\\>"), collapse="|")
         
-        sj <- ij_s_split[grepl(si_pat, names(ij_s_split))]
-        sj <- do.call(rbind, sj)
+        sj <- ij_s_split[grep(si_pat, names(ij_s_split))]
+        sj <- do.call("rbind", sj)
         rownames(sj) <- NULL
-        qi_pat <- paste(paste0("\\<", unique(sj$query), "\\>"), collapse="|")
+        qi_pat <- paste0(paste0("\\<", unique(sj$query), "\\>"), collapse="|")
         
-        qj <- ji_q_split[grepl(si_pat, names(ji_q_split))]
-        qj <- do.call(rbind, qj)
+        qj <- ji_q_split[grep(si_pat, names(ji_q_split))]
+        qj <- do.call("rbind", qj)
         rownames(qj) <- NULL
-        sj_pat <- paste(paste0("\\<", unique(c(sj$query, qj$subject)), "\\>"),
-                        collapse="|")
+        sj_pat <- paste0(paste0("\\<", unique(c(sj$query, qj$subject)), "\\>"), collapse="|")
         
-        si <- ji_s_split[grepl(sj_pat, names(ji_s_split))]
-        si <- do.call(rbind, si)
+        si <- ji_s_split[grep(sj_pat, names(ji_s_split))]
+        si <- do.call("rbind", si)
         rownames(si) <- NULL
         
-        si <- si[,c("subject","query", "pct", "score","eval")]
-        qj <- qj[,c("subject","query", "pct", "score","eval")]
-        
-        names(qi) <- names(sj) <- names(si) <- names(qj) <- c("i", "j", "pct", "score","eval")
-        matches <- do.call(rbind, list(qi, sj, si, qj))  
+        si <- si[, c("subject", "query", "pident", "paln", "score", "eval")]
+        qj <- qj[, c("subject", "query", "pident", "paln", "score", "eval")]
+        names(qi) <- names(sj) <- names(si) <- names(qj) <- c("i", "j", "pident", "paln", "score", "eval")
+        matches <- do.call("rbind", list(qi, sj, si, qj))  
         if (length(unique(matches$i)) > 1L || length(unique(matches$j)) > 1L) {
-          x <- matches[order(matches[,"eval"], -matches[,"score"], -matches[,"pct"]),]
+          x <- matches[order(matches[, "eval"], -matches[, "score"], -matches[, "pident"]),]
           while (nrow(x) > 0L) {         
             if (log) {
-              write.table(x, file=log_file, row.names=FALSE, col.names=TRUE,
-                          append=TRUE, quote=FALSE, sep="\t")
+              write.table(x, file = log_file, row.names = FALSE, col.names = TRUE,
+                          append = TRUE, quote = FALSE, sep = "\t")
             }
             i <- x[1, "i"]
             j <- x[1, "j"] 
@@ -146,10 +263,11 @@ orthologyMatrix <- function(base_names, blat_dir, cutoff=1e-3, name_sep="-", log
         }
       }, 
                error = function(e) {
-                 message(sprintf("Error thrown in %s\n", ij_q_split[i]))
+                 s <- paste(sprintf("%s: %s", names(ij_q_split[[i]]), ij_q_split[[i]]), collapse = ", ")
+                 message(sprintf("No reciprocal match for %s\n", s))
                  if (log) {
-                   cat(sprintf("Error thrown in \n%s\n\n", ij_q_split[i]),
-                       file=log_file, append=TRUE)
+                   cat(sprintf("No reciprocal match for \n%s\n\n", s), file = log_file,
+                       append = TRUE)
                  }
                })
     }

@@ -246,6 +246,18 @@ strip_ext <- function(file, sep = "\\.", level = 0L) {
 }
 
 
+replace_ext <- function(file, replacement = "", sep = "\\.", level = 0) {
+  if (nchar(replacement) == 0L) {
+    sep = ""
+  }
+  if (grepl("^\\.", replacement)) {
+    replacement <- usplit(replacement, split = "^\\.")[2L]
+  }
+  paste(strip_ext(file = file, sep = sep, level = level), 
+        replacement, sep = gsub("\\", "", sep, fixed = TRUE))
+}
+
+
 create_if_not_exists <- function(path, type="dir", ...) {
   type <- match.arg(type, c("dir", "file"))
   assert_that(is.string(path))
